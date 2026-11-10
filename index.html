@@ -785,7 +785,8 @@
 
     <!-- Havza Hızlı Filtresi -->
     <div class="basin-selector-nav">
-      <button class="basin-nav-btn active" id="btnFilterAll" onclick="setBasinFilter('all')">🌐 Tüm Sınıraşan Sular</button>
+      <button class="basin-nav-btn" id="btnClearAllLayers" onclick="clearAllLayers()" title="Tüm harita katmanlarını kapat">⚪ Katmanları Kapat</button>
+      <button class="basin-nav-btn" id="btnFilterAll" onclick="setBasinFilter('all')">🌐 Tüm Sınıraşan Sular</button>
       <button class="basin-nav-btn" id="btnFilterIraq" onclick="setBasinFilter('iraq')">🇮🇶 Dicle-Fırat (21)</button>
       <button class="basin-nav-btn" id="btnFilterAzerbaijan" onclick="setBasinFilter('caucasus')">🇦🇿 Aras-Kura (24)</button>
       <button class="basin-nav-btn" id="btnFilterCoruh" onclick="setBasinFilter('coruh')">🇬🇪 Çoruh (23)</button>
@@ -846,7 +847,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerTigris" checked>
+                <input type="checkbox" id="layerTigris">
                 <span class="layer-swatch" style="background: var(--tigris-color);"></span>
                 Dicle Nehri & Kolları (Büyük Zap, Hezil)
               </label>
@@ -854,7 +855,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerEuphrates" checked>
+                <input type="checkbox" id="layerEuphrates">
                 <span class="layer-swatch" style="background: var(--euphrates-color);"></span>
                 Fırat Nehri (Karasu, Murat)
               </label>
@@ -862,7 +863,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerIraqDams" checked>
+                <input type="checkbox" id="layerIraqDams">
                 <span class="layer-swatch" style="background: #38BDF8;"></span>
                 Barajlar (Ilısu, Musul, Atatürk, Haditha)
               </label>
@@ -870,7 +871,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerIraqCrossings" checked>
+                <input type="checkbox" id="layerIraqCrossings">
                 <span class="layer-swatch" style="background: #E31A1C; transform:rotate(45deg); width:10px; height:10px;"></span>
                 TR-Irak Sınır Geçişleri (Fişhabur, Çukurca)
               </label>
@@ -886,7 +887,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerArasKura" checked>
+                <input type="checkbox" id="layerArasKura">
                 <span class="layer-swatch" style="background: var(--main-river-color);"></span>
                 Aras ve Kura Ana Nehirleri
               </label>
@@ -894,7 +895,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerArmeniaRivers" checked>
+                <input type="checkbox" id="layerArmeniaRivers">
                 <span class="layer-swatch" style="background: var(--armenia-river-color);"></span>
                 Ermenistan Nehirleri & Ohçuçay Madenleri
               </label>
@@ -902,7 +903,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerCaucasusDams" checked>
+                <input type="checkbox" id="layerCaucasusDams">
                 <span class="layer-swatch" style="background: #0284C7;"></span>
                 Barajlar (Mingəçevir, Arpaçay, Sevan)
               </label>
@@ -918,7 +919,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerCoruh" checked>
+                <input type="checkbox" id="layerCoruh">
                 <span class="layer-swatch" style="background: #6366F1;"></span>
                 Çoruh Nehri & Barajları (Yusufeli, Deriner)
               </label>
@@ -926,7 +927,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerMericAsi" checked>
+                <input type="checkbox" id="layerMericAsi">
                 <span class="layer-swatch" style="background: #F59E0B;"></span>
                 Meriç (Edirne-Yunanistan) & Asi (Hatay)
               </label>
@@ -934,7 +935,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerDoguKaradeniz" checked>
+                <input type="checkbox" id="layerDoguKaradeniz">
                 <span class="layer-swatch" style="background: #0EA5E9;"></span>
                 Doğu Karadeniz (HKEP - Fırtına, Harşit, Sarp Sınırı)
               </label>
@@ -942,7 +943,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerCeyhan" checked>
+                <input type="checkbox" id="layerCeyhan">
                 <span class="layer-swatch" style="background: #F59E0B;"></span>
                 Ceyhan Havzası (HKEP - Menzelet, Berke, Aslantaş, BTC)
               </label>
@@ -950,7 +951,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerSeyhan" checked>
+                <input type="checkbox" id="layerSeyhan">
                 <span class="layer-swatch" style="background: #14B8A6;"></span>
                 Seyhan Havzası (HKEP - Zamantı, Çatalan, Adana, Akyatan)
               </label>
@@ -966,7 +967,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerAgi" checked>
+                <input type="checkbox" id="layerAgi">
                 <span class="layer-swatch" style="background: #0284C7;"></span>
                 Akım Gözlem İstasyonları (AGİ)
               </label>
@@ -974,7 +975,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerSettlements" checked>
+                <input type="checkbox" id="layerSettlements">
                 <span class="layer-swatch" style="background: #FACC15;"></span>
                 Yerleşim Yerleri (Başkent & Bölge)
               </label>
@@ -982,7 +983,7 @@
 
             <div class="layer-item">
               <label class="layer-label">
-                <input type="checkbox" id="layerPeaks" checked>
+                <input type="checkbox" id="layerPeaks">
                 <span class="layer-swatch" style="background: #64748B;"></span>
                 Dağ Zirveleri (Cilo, Ağrı vb.)
               </label>
@@ -2268,10 +2269,10 @@
     <div class="coord-display-group">
       <div>WGS 84 Coğrafi: <span class="coord-val" id="hudCoordsGeo">37° 15' 30" K, 42° 20' 15" D</span></div>
       <div>UTM Zone: <span class="coord-val" id="hudCoordsUtm">Zone 37N / 38N</span></div>
-      <div>Aktif Havza: <span class="coord-val" id="hudActiveBasin">Dicle-Fırat & Aras-Kura</span></div>
+      <div>Aktif Havza: <span class="coord-val" id="hudActiveBasin">Katmanlar Kapalı (Seçim Yapınız)</span></div>
       <div>🌦️ Canlı Hava: <span class="coord-val" id="hudWeatherSnippet" style="color:#38BDF8;">Cizre: Yükleniyor...</span></div>
     </div>
-    <div>Durum: <span style="color:#10B981;">Tüm Sınıraşan Hatlar Aktif</span> | Datum: <span class="coord-val">WGS 84</span></div>
+    <div>Durum: <span style="color:#94A3B8;" id="hudSystemStatus">Katmanlar Kapalı (Temiz Görünüm)</span> | Datum: <span class="coord-val">WGS 84</span></div>
   </footer>
 
   <!-- MODAL: Havza İstatistikleri -->
@@ -2497,25 +2498,26 @@
 
     /* -------------------------------------------------------------
        3. KATMAN GRUPLARI (DİCLE-FIRAT-IRAK & ARAS-KURA-KAFKASLAR)
+       Başlangıçta tüm tematik katmanlar kapalıdır (kullanıcı seçimine bağlı)
        ------------------------------------------------------------- */
-    const grpTigris = L.layerGroup().addTo(map);
-    const grpEuphrates = L.layerGroup().addTo(map);
-    const grpIraqDams = L.layerGroup().addTo(map);
-    const grpIraqCrossings = L.layerGroup().addTo(map);
+    const grpTigris = L.layerGroup();
+    const grpEuphrates = L.layerGroup();
+    const grpIraqDams = L.layerGroup();
+    const grpIraqCrossings = L.layerGroup();
 
-    const grpArasKura = L.layerGroup().addTo(map);
-    const grpArmeniaRivers = L.layerGroup().addTo(map);
-    const grpCaucasusDams = L.layerGroup().addTo(map);
+    const grpArasKura = L.layerGroup();
+    const grpArmeniaRivers = L.layerGroup();
+    const grpCaucasusDams = L.layerGroup();
 
-    const grpCoruh = L.layerGroup().addTo(map);
-    const grpMericAsi = L.layerGroup().addTo(map);
-    const grpDoguKaradeniz = L.layerGroup().addTo(map);
-    const grpCeyhan = L.layerGroup().addTo(map);
-    const grpSeyhan = L.layerGroup().addTo(map);
+    const grpCoruh = L.layerGroup();
+    const grpMericAsi = L.layerGroup();
+    const grpDoguKaradeniz = L.layerGroup();
+    const grpCeyhan = L.layerGroup();
+    const grpSeyhan = L.layerGroup();
 
-    const grpAgi = L.layerGroup().addTo(map);
-    const grpSettlements = L.layerGroup().addTo(map);
-    const grpPeaks = L.layerGroup().addTo(map);
+    const grpAgi = L.layerGroup();
+    const grpSettlements = L.layerGroup();
+    const grpPeaks = L.layerGroup();
 
     /* -------------------------------------------------------------
        OPENWEATHER CANLI METEOROLOJİ & DOĞAL AFET KATMANLARI
@@ -4130,6 +4132,50 @@
       }
     }
 
+    function syncCheckboxes() {
+      const bindings = [
+        { id: 'layerTigris', grp: grpTigris },
+        { id: 'layerEuphrates', grp: grpEuphrates },
+        { id: 'layerIraqDams', grp: grpIraqDams },
+        { id: 'layerIraqCrossings', grp: grpIraqCrossings },
+        { id: 'layerArasKura', grp: grpArasKura },
+        { id: 'layerArmeniaRivers', grp: grpArmeniaRivers },
+        { id: 'layerCaucasusDams', grp: grpCaucasusDams },
+        { id: 'layerCoruh', grp: grpCoruh },
+        { id: 'layerMericAsi', grp: grpMericAsi },
+        { id: 'layerDoguKaradeniz', grp: grpDoguKaradeniz },
+        { id: 'layerCeyhan', grp: grpCeyhan },
+        { id: 'layerSeyhan', grp: grpSeyhan },
+        { id: 'layerAgi', grp: grpAgi },
+        { id: 'layerSettlements', grp: grpSettlements },
+        { id: 'layerPeaks', grp: grpPeaks }
+      ];
+      bindings.forEach(b => {
+        const el = document.getElementById(b.id);
+        if (el) el.checked = map.hasLayer(b.grp);
+      });
+    }
+
+    function clearAllLayers() {
+      document.querySelectorAll('.basin-nav-btn').forEach(b => b.classList.remove('active'));
+      const allGroups = [
+        grpTigris, grpEuphrates, grpIraqDams, grpIraqCrossings,
+        grpArasKura, grpArmeniaRivers, grpCaucasusDams,
+        grpCoruh, grpMericAsi, grpDoguKaradeniz, grpCeyhan, grpSeyhan,
+        grpAgi, grpSettlements, grpPeaks,
+        owmPrecipitation, owmClouds, owmTemp, owmWind, owmPressure,
+        usbsBasinsLayer, usbsRiversLayer, usbsFloodQ100Layer, usbsFloodHazardLayer, usbsFloodDepthLayer, usbsTypMeasuresLayer
+      ];
+      allGroups.forEach(g => { if (g && map.hasLayer(g)) map.removeLayer(g); });
+      if (usbsVectorBasinsLayer && map.hasLayer(usbsVectorBasinsLayer)) map.removeLayer(usbsVectorBasinsLayer);
+      
+      document.querySelectorAll('#tabLayers input[type="checkbox"]').forEach(c => c.checked = false);
+      document.querySelectorAll('#tabWeather input[type="checkbox"]').forEach(c => c.checked = false);
+      document.getElementById('hudActiveBasin').textContent = "Katmanlar Kapalı (Temiz Görünüm)";
+      const sysStatus = document.getElementById('hudSystemStatus');
+      if (sysStatus) sysStatus.textContent = "Katmanlar Kapalı";
+    }
+
     function setBasinFilter(type) {
       document.querySelectorAll('.basin-nav-btn').forEach(b => b.classList.remove('active'));
 
@@ -4202,6 +4248,10 @@
         flyToExtent('meric');
         document.getElementById('hudActiveBasin').textContent = "1. Meriç & 19. Asi Sınıraşan Havzaları";
       }
+
+      syncCheckboxes();
+      const sysStatus = document.getElementById('hudSystemStatus');
+      if (sysStatus) sysStatus.textContent = "Katmanlar Güncellendi";
     }
 
     /* -------------------------------------------------------------
