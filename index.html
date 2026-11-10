@@ -1036,6 +1036,66 @@
             </div>
           </div>
 
+          <!-- USBS Canlı Harita ve Taşkın Katmanları (WMS / ArcGIS Server) -->
+          <div class="panel-section" style="border-color: #6366F1;">
+            <div class="panel-section-title" style="color: #A5B4FC;">
+              <span>🌊 USBS Canlı Harita & Taşkın Modeli</span>
+              <span style="font-size: 9px; color:#C7D2FE; background:rgba(99, 102, 241, 0.25); padding:1px 5px; border-radius:4px;">Canlı WMS</span>
+            </div>
+
+            <p style="font-size: 10px; color: #94A3B8; margin-bottom: 8px; line-height: 1.35;">
+              Ulusal Su Bilgi Sistemi (USBS) WMS servislerinden çekilen dinamik hidroloji ve taşkın katmanları.
+            </p>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsBasins">
+                <span class="layer-swatch" style="background: #6366F1; border: 1px dashed white;"></span>
+                🗺️ 25 Havza Sınırları (USBS WMS)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsRivers">
+                <span class="layer-swatch" style="background: #38BDF8;"></span>
+                🌊 Nehir Ağı (USBS Strahler Hiyerarşisi)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsFloodQ100">
+                <span class="layer-swatch" style="background: #EF4444;"></span>
+                🔴 Taşkın Genel Risk Haritası Q100 (100 Yıllık)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsFloodHazard">
+                <span class="layer-swatch" style="background: #F59E0B;"></span>
+                ⚠️ Taşkın Tehlike Derecelendirmesi Q100
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsFloodDepth">
+                <span class="layer-swatch" style="background: #0284C7;"></span>
+                💧 Taşkın Su Derinliği Dağılımı Q100
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsTypMeasures">
+                <span class="layer-swatch" style="background: #10B981; border-radius:50%;"></span>
+                🏗️ TYP Eylem Tedbirleri (Sedde, Islah, Menfez)
+              </label>
+            </div>
+          </div>
+
         </div>
 
         <!-- 2. OpenWeather Canlı Hava & Doğal Afet Sekmesi -->
@@ -2477,6 +2537,65 @@
       maxZoom: 18,
       opacity: 0.65,
       attribution: '&copy; OpenWeather'
+    });
+
+    /* -------------------------------------------------------------
+       USBS (ULUSAL SU BİLGİ SİSTEMİ) WMS CANLI HARİTA VE TAŞKIN MODELLERİ
+       ------------------------------------------------------------- */
+    const usbsProxyBase = "https://usbs.tarimorman.gov.tr/usbs/proxy.ashx?http://usbsgissrv:6080/arcgis/services/";
+
+    const usbsBasinsLayer = L.tileLayer.wms(`${usbsProxyBase}SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer/WMSServer`, {
+      layers: '41',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS 25 Havza Sınırı'
+    });
+
+    const usbsRiversLayer = L.tileLayer.wms(`${usbsProxyBase}SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer/WMSServer`, {
+      layers: '0,1,2',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS Nehir Ağı'
+    });
+
+    const usbsFloodQ100Layer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
+      layers: 'GenelRiskQ100',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS Taşkın Genel Risk Q100'
+    });
+
+    const usbsFloodHazardLayer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
+      layers: 'TehlikeDereceQ100',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS Taşkın Tehlike Q100'
+    });
+
+    const usbsFloodDepthLayer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
+      layers: 'SuDerinliğiQ100',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS Taşkın Su Derinliği Q100'
+    });
+
+    const usbsTypMeasuresLayer = L.tileLayer.wms(`${usbsProxyBase}YONETIM_PLANLARI_VIEW/YONETIM_PLANLARI/MapServer/WMSServer`, {
+      layers: 'TYP_NOKTA_VT,TYP_CIZGI_VT',
+      format: 'image/png32',
+      transparent: true,
+      version: '1.3.0',
+      crs: L.CRS.EPSG3857,
+      attribution: 'USBS TYP Tedbirleri'
     });
 
     /* =============================================================
@@ -4163,7 +4282,14 @@
       { id: 'layerOwmClouds', grp: owmClouds },
       { id: 'layerOwmTemp', grp: owmTemp },
       { id: 'layerOwmWind', grp: owmWind },
-      { id: 'layerOwmPressure', grp: owmPressure }
+      { id: 'layerOwmPressure', grp: owmPressure },
+      // USBS Canlı Harita & Taşkın Katmanları (WMS)
+      { id: 'layerUsbsBasins', grp: usbsBasinsLayer },
+      { id: 'layerUsbsRivers', grp: usbsRiversLayer },
+      { id: 'layerUsbsFloodQ100', grp: usbsFloodQ100Layer },
+      { id: 'layerUsbsFloodHazard', grp: usbsFloodHazardLayer },
+      { id: 'layerUsbsFloodDepth', grp: usbsFloodDepthLayer },
+      { id: 'layerUsbsTypMeasures', grp: usbsTypMeasuresLayer }
     ];
 
     layerBindings.forEach(b => {
