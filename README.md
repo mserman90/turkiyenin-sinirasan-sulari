@@ -79,6 +79,7 @@ Bu platform; gerçek zamanlı uydu meteorolojisini, küresel hidrolojik taşkın
 * `gpm_imerg_download.py`: NASA CMR API üzerinden Türkiye sınırları için GPM IMERG (Early, Late, Final) yağış granule'larını arayan ve kalibrasyon kurallarını uygulayan CLI aracı.
 * `usbs_data_extractor.py`: USBS ArcGIS Server REST servislerinden havza ve taşkın modellerini sorgulayan ve GeoJSON dışa aktaran Python aracı.
 * `turkiye_sinirasan_havzalar_usbs.geojson`: Sınıraşan 5 havzamızın 10.97 MB optimize edilmiş yüksek çözünürlüklü vektör poligon sınırları.
+* `turkiye_sinirasan_havzalar_web.geojson`: Web harita için 2.19 MB ultra hızlı yüklenen sınıraşan havza vektör sınırları.
 * `iat_sorgulama.csv`: İçme Suyu Arıtma Tesisleri ve kaynak veritabanı.
 
 ---

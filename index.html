@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Türkiye'nin Sınıraşan Suları</title>
 
+  <!-- Hızlandırma: Preconnect ve DNS Prefetch Kaynak İpuçları -->
+  <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>
+  <link rel="dns-prefetch" href="https://server.arcgisonline.com">
+  <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
+  <link rel="dns-prefetch" href="https://services.arcgisonline.com">
+  <link rel="dns-prefetch" href="https://usbs.tarimorman.gov.tr">
+  <link rel="dns-prefetch" href="https://api.openweathermap.org">
+  <link rel="dns-prefetch" href="https://tile.openweathermap.org">
+  <link rel="dns-prefetch" href="https://flood-api.open-meteo.com">
+
   <!-- Leaflet CSS (Yerel dosya ve CDN yedekli) -->
   <link rel="stylesheet" href="leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'">
 
@@ -378,13 +388,15 @@
       background: #1E3A8A;
     }
 
-    /* Esri Map Container */
+    /* Esri Map Container (GPU Hızlandırmalı) */
     #leafletMap {
       flex: 1;
       height: 100%;
       width: 100%;
       background: #151F32;
       z-index: 10;
+      contain: layout size;
+      will-change: transform;
     }
 
     /* Kartografik Başlık Bloğu (Üst Orta) */
@@ -2384,13 +2396,8 @@
     </div>
   </div>
 
-  <!-- LEAFLET JAVASCRIPT KÜTÜPHANESİ -->
+  <!-- LEAFLET JAVASCRIPT KÜTÜPHANESİ (Yerel Hızlı Yükleme) -->
   <script src="leaflet.js"></script>
-  <script>
-    if (typeof L === 'undefined') {
-      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>');
-    }
-  </script>
 
   <!-- JAVASCRIPT: CBS MOTORU VE SINIRAŞAN KATMANLAR -->
   <script>
@@ -2444,45 +2451,57 @@
     }
 
     /* -------------------------------------------------------------
-       2. LEAFLET HARİTA KURULUMU (TÜM TÜRKİYE SINIRAŞAN SULARI KAPSAMI)
+       2. LEAFLET HARİTA KURULUMU (GPU CANVAS & HIZLANDIRILMIŞ PERFORMANS)
        ------------------------------------------------------------- */
     const map = L.map('leafletMap', {
       center: [38.50, 43.50],
       zoom: 6,
-      minZoom: 5,
+      minZoom: 4,
       maxZoom: 18,
-      zoomControl: false
+      zoomControl: false,
+      preferCanvas: true,
+      zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
+      wheelPxPerZoomLevel: 100
     });
 
+    // Karo Yükleme Performans Ayarları (Jitter ve Ağ Yükünü Engelleme)
+    const TILE_PERF_OPTIONS = {
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 3
+    };
+
     const basemaps = {
-      esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-      }),
-      esri_satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-      }),
-      esri_street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom'
-      }),
-      esri_natgeo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_natgeo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 16,
         attribution: 'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
-      }),
-      esri_shaded: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_shaded: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 13,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, METI'
-      }),
-      esri_physical: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_physical: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 8,
         attribution: 'Tiles &copy; Esri &mdash; US National Park Service'
-      }),
-      esri_terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
+      }, TILE_PERF_OPTIONS)),
+      esri_terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', Object.assign({
         maxZoom: 13,
         attribution: 'Tiles &copy; Esri &mdash; USGS, Esri, TGS, DeLorme, NAVTEQ'
-      })
+      }, TILE_PERF_OPTIONS))
     };
 
     let currentBasemap = basemaps.esri_topo;
@@ -2567,6 +2586,9 @@
           format: 'png32',
           maxZoom: 19,
           minZoom: 3,
+          updateWhenIdle: true,
+          updateWhenZooming: false,
+          keepBuffer: 2,
           attribution: 'USBS CBS Servisi'
         }, options);
         L.TileLayer.prototype.initialize.call(this, '', opts);
@@ -2638,7 +2660,7 @@
       if (usbsVectorLoading) return;
       usbsVectorLoading = true;
       try {
-        const resp = await fetch('turkiye_sinirasan_havzalar_usbs.geojson');
+        const resp = await fetch('turkiye_sinirasan_havzalar_web.geojson');
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         
@@ -4085,15 +4107,21 @@
     });
 
     /* -------------------------------------------------------------
-       4. CANLI KOORDİNAT TAKİBİ VE HUD
+       4. CANLI KOORDİNAT TAKİBİ VE HUD (60 FPS REQUESTANIMATIONFRAME THROTTLED)
        ------------------------------------------------------------- */
+    let mouseCoordTicking = false;
     map.on('mousemove', (e) => {
-      const lat = e.latlng.lat;
-      const lon = e.latlng.lng;
-      const utm = latLonToUtm(lat, lon);
-
-      document.getElementById('hudCoordsGeo').textContent = `${toDms(lat, 'K', 'G')}, ${toDms(lon, 'D', 'B')} (${lat.toFixed(4)}°, ${lon.toFixed(4)}°)`;
-      document.getElementById('hudCoordsUtm').textContent = `${utm.zone}: X: ${utm.easting.toLocaleString('tr-TR')} m | Y: ${utm.northing.toLocaleString('tr-TR')} m`;
+      if (!mouseCoordTicking) {
+        requestAnimationFrame(() => {
+          const lat = e.latlng.lat;
+          const lon = e.latlng.lng;
+          const utm = latLonToUtm(lat, lon);
+          document.getElementById('hudCoordsGeo').textContent = `${toDms(lat, 'K', 'G')}, ${toDms(lon, 'D', 'B')} (${lat.toFixed(4)}°, ${lon.toFixed(4)}°)`;
+          document.getElementById('hudCoordsUtm').textContent = `${utm.zone}: X: ${utm.easting.toLocaleString('tr-TR')} m | Y: ${utm.northing.toLocaleString('tr-TR')} m`;
+          mouseCoordTicking = false;
+        });
+        mouseCoordTicking = true;
+      }
     });
 
     /* -------------------------------------------------------------
@@ -4975,8 +5003,14 @@
       ).join('');
     }
 
-    // Sayfa açılışında Cizre / Dicle Sınırı canlı hava verisini otomatik yükle
-    fetchWeatherByCoords(37.33, 42.19, 'Cizre / Dicle Sınırı');
+    // Sayfa açılış hızını korumak için canlı hava ve taşkın verisini harita çizildikten sonra arka planda yükle
+    setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => fetchWeatherByCoords(37.33, 42.19, 'Cizre / Dicle Sınırı'));
+      } else {
+        fetchWeatherByCoords(37.33, 42.19, 'Cizre / Dicle Sınırı');
+      }
+    }, 1500);
 
   </script>
 </body>
