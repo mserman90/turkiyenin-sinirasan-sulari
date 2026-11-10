@@ -2,8 +2,9 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TÃ¼rkiye'nin SÄ±nÄ±raÅŸan SularÄ±</title>
+  <title>Türkiye'nin Sınıraşan Suları</title>
 
   <!-- Leaflet CSS (Yerel dosya ve CDN yedekli) -->
   <link rel="stylesheet" href="leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'">
@@ -1036,22 +1037,30 @@
             </div>
           </div>
 
-          <!-- USBS Canlı Harita ve Taşkın Katmanları (WMS / ArcGIS Server) -->
+          <!-- USBS Canlı Harita ve Taşkın Katmanları (ArcGIS Server) -->
           <div class="panel-section" style="border-color: #6366F1;">
             <div class="panel-section-title" style="color: #A5B4FC;">
-              <span>🌊 USBS Canlı Harita & Taşkın Modeli</span>
-              <span style="font-size: 9px; color:#C7D2FE; background:rgba(99, 102, 241, 0.25); padding:1px 5px; border-radius:4px;">Canlı WMS</span>
+              <span>🌊 USBS Canlı CBS & Taşkın Modelleri</span>
+              <span style="font-size: 9px; color:#C7D2FE; background:rgba(99, 102, 241, 0.25); padding:1px 5px; border-radius:4px;">ArcGIS Server</span>
             </div>
 
             <p style="font-size: 10px; color: #94A3B8; margin-bottom: 8px; line-height: 1.35;">
-              Ulusal Su Bilgi Sistemi (USBS) WMS servislerinden çekilen dinamik hidroloji ve taşkın katmanları.
+              Ulusal Su Bilgi Sistemi (USBS) CBS servislerinden doğrudan çekilen dinamik hidroloji, nehir ağı ve taşkın risk katmanları.
             </p>
 
             <div class="layer-item">
               <label class="layer-label">
                 <input type="checkbox" id="layerUsbsBasins">
                 <span class="layer-swatch" style="background: #6366F1; border: 1px dashed white;"></span>
-                🗺️ 25 Havza Sınırları (USBS WMS)
+                🗺️ 25 Havza Sınırları (USBS Canlı CBS)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerUsbsVectorBasins">
+                <span class="layer-swatch" style="background: #EC4899; border: 1px solid white;"></span>
+                📐 Sınıraşan Havzalar Resmi Sınırı (USBS Vektör GeoJSON)
               </label>
             </div>
 
@@ -1784,18 +1793,18 @@
             </div>
           </div>
 
-          <!-- SYGM İçme Suyu Kaynakları ve Arıtma Tesisleri (İAT) Envanteri -->
+          <!-- İçme Suyu Kaynakları ve Arıtma Tesisleri (İAT) Envanteri -->
           <div class="panel-section" style="border-color: #6366F1; background: rgba(99, 102, 241, 0.05);">
             <div class="panel-section-title" style="color: #A5B4FC;">
-              <span>🚰 SYGM İçme Suyu & Arıtma Tesisleri (İAT)</span>
+              <span>🚰 İçme Suyu & Arıtma Tesisleri (İAT)</span>
               <span style="font-size: 9px; color:#C7D2FE; background:rgba(99, 102, 241, 0.25); padding:1px 5px; border-radius:4px;">USBS Veritabanı</span>
             </div>
             <p style="font-size:10.5px; color:#E2E8F0; line-height:1.45; margin-bottom:8px;">
-              Tarım ve Orman Bakanlığı SYGM Ulusal Su Bilgi Sistemi kayıtlı su kaynakları (baraj, gölet, kuyu, dere, kaptaj) ve besledikleri <strong>İçme Suyu Arıtma Tesisleri (TR-IAT)</strong> envanteri.
+              Ulusal Su Bilgi Sistemi kayıtlı su kaynakları (baraj, gölet, kuyu, dere, kaptaj) ve besledikleri <strong>İçme Suyu Arıtma Tesisleri (TR-IAT)</strong> envanteri.
             </p>
             <div style="display:flex; gap:6px; margin-bottom:8px;">
-              <a href="file:///c:/Users/murat.erman/Downloads/EBYS_Indirilenler/AZERBAYCAN/iat_sorgulama.csv" target="_blank" class="gis-btn active" style="flex:1; justify-content:center; text-decoration:none; font-size:10.5px; background:#4F46E5; padding:6px 8px;">
-                📊 İAT Veritabanını İncele (CSV) ↗
+              <a href="iat_sorgulama.csv" download="iat_sorgulama.csv" class="gis-btn active" style="flex:1; justify-content:center; text-decoration:none; font-size:10.5px; background:#4F46E5; padding:6px 8px;">
+                📊 İAT Veritabanını İndir / İncele (CSV) ↗
               </a>
             </div>
             <input type="text" id="iatQuickSearchInput" placeholder="Kaynak, il veya arıtma tesisi ara (örn. Darlık, Terkos, Kilis)..." style="width:100%; background:#090D16; border:1px solid #4338CA; color:#F8FAFC; padding:5px 8px; border-radius:5px; font-size:10px; margin-bottom:6px;" oninput="filterIatPreview(this.value)">
@@ -2540,63 +2549,133 @@
     });
 
     /* -------------------------------------------------------------
-       USBS (ULUSAL SU BİLGİ SİSTEMİ) WMS CANLI HARİTA VE TAŞKIN MODELLERİ
+       USBS (ULUSAL SU BİLGİ SİSTEMİ) CBS CANLI HARİTA VE TAŞKIN KATMANLARI
+       Esri ArcGIS Server REST Export Servis Entegrasyonu (No-Referrer Korumalı)
        ------------------------------------------------------------- */
-    const usbsProxyBase = "https://usbs.tarimorman.gov.tr/usbs/proxy.ashx?http://usbsgissrv:6080/arcgis/services/";
+    const usbsProxyBase = "https://usbs.tarimorman.gov.tr/usbs/proxy.ashx?http://usbsgissrv:6080/arcgis/rest/services/";
 
-    const usbsBasinsLayer = L.tileLayer.wms(`${usbsProxyBase}SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer/WMSServer`, {
-      layers: '41',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS 25 Havza Sınırı'
+    const UsbsTileLayer = L.TileLayer.extend({
+      initialize: function (service, layers, options) {
+        this.service = service;
+        this.layers = layers;
+        const opts = Object.assign({
+          tileSize: 256,
+          opacity: 0.85,
+          transparent: true,
+          format: 'png32',
+          maxZoom: 19,
+          minZoom: 3,
+          attribution: 'USBS CBS Servisi'
+        }, options);
+        L.TileLayer.prototype.initialize.call(this, '', opts);
+      },
+      getTileUrl: function (coords) {
+        const bounds = this._tileCoordsToBounds(coords);
+        const nw = L.CRS.EPSG3857.project(bounds.getNorthWest());
+        const se = L.CRS.EPSG3857.project(bounds.getSouthEast());
+        const bbox = `${nw.x},${se.y},${se.x},${nw.y}`;
+        return `${usbsProxyBase}${this.service}/export?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=256,256&layers=${this.layers}&format=${this.options.format}&transparent=true&f=image`;
+      }
     });
 
-    const usbsRiversLayer = L.tileLayer.wms(`${usbsProxyBase}SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer/WMSServer`, {
-      layers: '0,1,2',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS Nehir Ağı'
-    });
+    // 1. 25 Havza Sınırları (Layer 0: Havza)
+    const usbsBasinsLayer = new UsbsTileLayer(
+      'SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer',
+      'show:0',
+      { attribution: 'USBS 25 Havza Sınırı', opacity: 0.9 }
+    );
 
-    const usbsFloodQ100Layer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
-      layers: 'GenelRiskQ100',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS Taşkın Genel Risk Q100'
-    });
+    // 2. Nehir Ağı (Layer 7: Strahler >6, Layer 8: Strahler 4-5-6, Layer 9: Strahler <4)
+    const usbsRiversLayer = new UsbsTileLayer(
+      'SAYISALLASTIRMA_2/SAYISALLASTIRMA_SERVIS_2/MapServer',
+      'show:7,8,9',
+      { attribution: 'USBS Nehir Ağı', opacity: 0.85 }
+    );
 
-    const usbsFloodHazardLayer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
-      layers: 'TehlikeDereceQ100',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS Taşkın Tehlike Q100'
-    });
+    // 3. Taşkın Genel Risk Haritası Q100 (Layer 4: GenelRiskQ100)
+    const usbsFloodQ100Layer = new UsbsTileLayer(
+      'PUBLIC/TASKIN/MapServer',
+      'show:4',
+      { attribution: 'USBS Taşkın Genel Risk Q100', opacity: 0.8 }
+    );
 
-    const usbsFloodDepthLayer = L.tileLayer.wms(`${usbsProxyBase}PUBLIC/TASKIN/MapServer/WMSServer`, {
-      layers: 'SuDerinliğiQ100',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS Taşkın Su Derinliği Q100'
-    });
+    // 4. Taşkın Tehlike Derecelendirmesi Q100 (Layer 7: TehlikeDereceQ100)
+    const usbsFloodHazardLayer = new UsbsTileLayer(
+      'PUBLIC/TASKIN/MapServer',
+      'show:7',
+      { attribution: 'USBS Taşkın Tehlike Q100', opacity: 0.8 }
+    );
 
-    const usbsTypMeasuresLayer = L.tileLayer.wms(`${usbsProxyBase}YONETIM_PLANLARI_VIEW/YONETIM_PLANLARI/MapServer/WMSServer`, {
-      layers: 'TYP_NOKTA_VT,TYP_CIZGI_VT',
-      format: 'image/png32',
-      transparent: true,
-      version: '1.3.0',
-      crs: L.CRS.EPSG3857,
-      attribution: 'USBS TYP Tedbirleri'
-    });
+    // 5. Taşkın Su Derinliği Dağılımı Q100 (Layer 10: SuDerinliğiQ100)
+    const usbsFloodDepthLayer = new UsbsTileLayer(
+      'PUBLIC/TASKIN/MapServer',
+      'show:10',
+      { attribution: 'USBS Taşkın Su Derinliği Q100', opacity: 0.8 }
+    );
+
+    // 6. TYP Taşkın Yönetim Planı Tedbirleri (Layer 12: TYP, Layer 24: TYP VT)
+    const usbsTypMeasuresLayer = new UsbsTileLayer(
+      'YONETIM_PLANLARI_VIEW/YONETIM_PLANLARI/MapServer',
+      'show:12,24',
+      { attribution: 'USBS TYP Eylem Tedbirleri', opacity: 0.85 }
+    );
+
+    // 7. Sınıraşan Havzalar USBS Vektör GeoJSON Katmanı
+    let usbsVectorBasinsLayer = null;
+    let usbsVectorLoading = false;
+
+    async function toggleUsbsVectorBasins(show) {
+      if (!show) {
+        if (usbsVectorBasinsLayer) map.removeLayer(usbsVectorBasinsLayer);
+        return;
+      }
+      if (usbsVectorBasinsLayer) {
+        map.addLayer(usbsVectorBasinsLayer);
+        return;
+      }
+      if (usbsVectorLoading) return;
+      usbsVectorLoading = true;
+      try {
+        const resp = await fetch('turkiye_sinirasan_havzalar_usbs.geojson');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        
+        usbsVectorBasinsLayer = L.geoJSON(data, {
+          style: function (f) {
+            return {
+              color: '#EC4899',
+              weight: 3,
+              opacity: 0.95,
+              dashArray: '6, 6',
+              fillColor: '#F472B6',
+              fillOpacity: 0.15
+            };
+          },
+          onEachFeature: function (f, l) {
+            const p = f.properties || {};
+            const areaKm2 = p.SHAPE_Area ? (p.SHAPE_Area / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : '-';
+            l.bindPopup(`
+              <div style="font-family:system-ui; font-size:12px; min-width:210px;">
+                <div style="font-weight:bold; color:#BE185D; border-bottom:1px solid #FBCFE8; padding-bottom:4px; margin-bottom:6px;">
+                  🌊 ${p.HAVZA_ADI || 'Sınıraşan Havza'} (USBS Resmi Sınır)
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <tr><td style="color:#64748B;">Havza No:</td><td style="font-weight:bold;">${p.HAVZA_NO || '-'}</td></tr>
+                  <tr><td style="color:#64748B;">Havza Kodu:</td><td style="font-weight:bold;">${p.HAVZA_KODU || '-'}</td></tr>
+                  <tr><td style="color:#64748B;">Resmi Alanı:</td><td style="font-weight:bold; color:#0284C7;">${areaKm2} km²</td></tr>
+                  <tr><td style="color:#64748B;">Geometri:</td><td style="font-weight:bold; color:#059669;">Resmi Sayısallaştırma (1:25.000)</td></tr>
+                </table>
+              </div>
+            `);
+          }
+        });
+        map.addLayer(usbsVectorBasinsLayer);
+      } catch (err) {
+        console.error("USBS Vektör Havza yükleme hatası:", err);
+      } finally {
+        usbsVectorLoading = false;
+      }
+    }
 
     /* =============================================================
        A. DİCLE VE BÜYÜK ZAP NEHİR SİSTEMİ (TÜRKİYE -> IRAK)
@@ -4301,6 +4380,13 @@
         });
       }
     });
+
+    const elUsbsVec = document.getElementById('layerUsbsVectorBasins');
+    if (elUsbsVec) {
+      elUsbsVec.addEventListener('change', (e) => {
+        toggleUsbsVectorBasins(e.target.checked);
+      });
+    }
 
     /* -------------------------------------------------------------
        OPENWEATHER API VE DOĞAL AFET / TAŞKIN İZLEME MOTORU

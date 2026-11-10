@@ -56,8 +56,9 @@ Bu platform; gerçek zamanlı uydu meteorolojisini, küresel hidrolojik taşkın
 * **Seyhan (18):** Adana Metropolü (338P), Seyhan (190P), Yenice (88P), Pozantı (40P).
 * **Ceyhan (20):** Kahramanmaraş, Türkoğlu ve Çukurova deltası.
 
-### 5. USBS (Ulusal Su Bilgi Sistemi) Canlı WMS & Taşkın Modelleri
-* **25 Havza Sınırları & Nehir Ağı:** WMS 1.3.0 ile canlı çekilen vektör havza poligonları ve Strahler nehir hiyerarşisi.
+### 5. USBS (Ulusal Su Bilgi Sistemi) Canlı CBS & Taşkın Modelleri
+* **25 Havza Sınırları & Nehir Ağı:** Esri ArcGIS Server REST export motoru ve `no-referrer` mimarisiyle canlı çekilen dinamik havza poligonları ve Strahler nehir hiyerarşisi.
+* **Sınıraşan Havzalar Vektör Sınırı (GeoJSON):** Dicle-Fırat, Aras-Kura, Çoruh, Meriç ve Asi havzalarının resmi 1:25.000 sayısallaştırma vektör sınırları ve anlık öznitelik sorgulaması (resmi alan km², havza kodu, havza no).
 * **Taşkın Genel Risk Haritası Q100:** 100 yıllık tekerrür debisine göre modellenmiş taşkın yayılım alanları.
 * **Taşkın Tehlike & Su Derinliği:** HEC-RAS 2D hidrodinamik modellerinden türetilmiş su derinliği haritaları.
 * **TYP Yönetim Planı Tedbirleri:** Menfez, süzücü bent, sedde ve ıslah yapısal eylem tedbirleri.
@@ -77,7 +78,7 @@ Bu platform; gerçek zamanlı uydu meteorolojisini, küresel hidrolojik taşkın
 * `open_meteo_flood_api.py`: Python standart kütüphaneleriyle yazılmış bağımsız CLI aracı. 7 günlük akarsu debisi çeker, terminalde ASCII çubuk hidroğrafı ve biçimlendirilmiş tablo basar.
 * `gpm_imerg_download.py`: NASA CMR API üzerinden Türkiye sınırları için GPM IMERG (Early, Late, Final) yağış granule'larını arayan ve kalibrasyon kurallarını uygulayan CLI aracı.
 * `usbs_data_extractor.py`: USBS ArcGIS Server REST servislerinden havza ve taşkın modellerini sorgulayan ve GeoJSON dışa aktaran Python aracı.
-* `turkiye_sinirasan_havzalar_usbs.geojson`: Sınıraşan 5 havzamızın 22.8 MB yüksek çözünürlüklü vektör poligon sınırları.
+* `turkiye_sinirasan_havzalar_usbs.geojson`: Sınıraşan 5 havzamızın 10.97 MB optimize edilmiş yüksek çözünürlüklü vektör poligon sınırları.
 * `iat_sorgulama.csv`: İçme Suyu Arıtma Tesisleri ve kaynak veritabanı.
 
 ---
