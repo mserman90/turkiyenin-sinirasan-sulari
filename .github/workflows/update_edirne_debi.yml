@@ -1,0 +1,45 @@
+name: DSİ Edirne Meriç-Tunca-Ergene Debi Güncelle
+
+on:
+  schedule:
+    # TSİ (UTC+3) 08:30, 14:30 ve 20:30'da otomatik çek
+    - cron: '30 5,11,17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-edirne-debi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Playwright Chromium kur (/tmp/pw içinde)
+        run: |
+          mkdir -p /tmp/pw
+          npm --prefix /tmp/pw install --no-save playwright
+          /tmp/pw/node_modules/.bin/playwright install chromium
+
+      - name: DSİ 11. Bölge debi tablosunu çek
+        env:
+          NODE_PATH: /tmp/pw/node_modules
+        run: node scripts/fetch_edirne_debi.mjs
+
+      - name: Değişiklik varsa kaydet ve gönder
+        run: |
+          if git diff --quiet data/edirne_debi.json; then
+            echo "Yeni debi değişikliği yok."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/edirne_debi.json
+          git commit -m "chore: update Edirne Meric-Tunca-Ergene river discharge [skip ci]"
+          git push

@@ -988,6 +988,14 @@
 
             <div class="layer-item">
               <label class="layer-label">
+                <input type="checkbox" id="layerEdirneStations">
+                <span class="layer-swatch" style="background: #38BDF8;"></span>
+                Edirne Canlı Debi (DSİ 11. Bölge Meriç-Tunca-Ergene)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label">
                 <input type="checkbox" id="layerDoguKaradeniz">
                 <span class="layer-swatch" style="background: #0EA5E9;"></span>
                 Doğu Karadeniz (HKEP - Fırtına, Harşit, Sarp Sınırı)
@@ -1494,6 +1502,45 @@
             <div id="dsiAgiResultCard" style="display:none; background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:9.8px; line-height:1.45;">
               <!-- Dinamik JS doldurur -->
             </div>
+          </div>
+
+          <!-- DSİ 11. Bölge (Edirne) Meriç-Tunca-Ergene Otomatik Canlı Debi Modülü -->
+          <div class="panel-section" id="edirneLiveSection" style="border-color: #0EA5E9; background: rgba(14, 165, 233, 0.06);">
+            <div class="panel-section-title" style="color: #7DD3FC;">
+              <span>🌊 Meriç–Tunca–Ergene Debi</span>
+              <a href="https://edirnenehir.dsi.gov.tr/" target="_blank" rel="noopener" style="font-size: 8.5px; color:#E0F2FE; background:#0369A1; padding:1px 5px; border-radius:4px; text-decoration:none; white-space:nowrap;">DSİ 11. Bölge ↗</a>
+            </div>
+            <div id="edirneLiveMeta" style="font-size:9.5px; color:#CBD5E1; margin-bottom:6px; line-height:1.4;">
+              GitHub Actions + Playwright ile <code style="color:#7DD3FC;">data/edirne_debi.json</code> üzerinden beslenen Meriç, Tunca ve Ergene ölçüm noktaları yükleniyor...
+            </div>
+            <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+              <button type="button" id="btnToggleEdirneMap" onclick="toggleEdirneStationsLayer()" class="gis-btn" style="flex:1.4; justify-content:center; font-size:9.2px; padding:4px 6px; background:#0C4A6E; border-color:#38BDF8; color:#E0F2FE;">
+                🗺️ İstasyonları Haritada Göster
+              </button>
+              <button type="button" onclick="loadEdirneDebiData(true)" class="gis-btn" style="flex:0.7; justify-content:center; font-size:9.2px; padding:4px 6px; background:#1E293B; border-color:#475569; color:#E2E8F0;" title="data/edirne_debi.json dosyasını yeniden oku">
+                🔄 Yenile
+              </button>
+            </div>
+            <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+              <select id="edirneStationSelect" onchange="syncEdirneSelectChange()" style="flex:1; min-width:0; max-width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:4px 5px; border-radius:4px; font-size:9.5px;"></select>
+              <button type="button" onclick="syncEdirneStationToAnfis()" class="gis-btn" style="flex-shrink:0; justify-content:center; font-size:9px; padding:4px 7px; background:#6D28D9; border-color:#A78BFA; color:#F5F3FF;">
+                🧠 Flood &amp; ANFIS'e Bağla
+              </button>
+            </div>
+            <div style="max-height:175px; overflow-y:auto; border:1px solid #1E293B; border-radius:4px; background:#090D16;">
+              <table style="width:100%; border-collapse:collapse; font-size:9.2px;">
+                <thead style="position:sticky; top:0; background:#1E293B; color:#94A3B8;">
+                  <tr>
+                    <th style="padding:4px 5px; text-align:left;">Nehir</th>
+                    <th style="padding:4px 5px; text-align:left;">İstasyon</th>
+                    <th style="padding:4px 5px; text-align:right;">Saat</th>
+                    <th style="padding:4px 5px; text-align:right;">Debi (m³/s)</th>
+                  </tr>
+                </thead>
+                <tbody id="edirneLiveTableBody"></tbody>
+              </table>
+            </div>
+            <div id="edirneComparisonMsg" style="display:none; margin-top:6px; padding:5px 6px; border-radius:4px; background:#0F172A; border:1px solid #334155; font-size:9.2px; color:#E2E8F0; line-height:1.45;"></div>
           </div>
 
           <!-- Radar Katmanları Hızlı Butonları -->
@@ -2789,6 +2836,7 @@
 
     const grpCoruh = L.layerGroup();
     const grpMericAsi = L.layerGroup();
+    const _edirneStationsLayer = L.layerGroup();
     const grpDoguKaradeniz = L.layerGroup();
     const grpCeyhan = L.layerGroup();
     const grpSeyhan = L.layerGroup();
@@ -4429,6 +4477,7 @@
         { id: 'layerCaucasusDams', grp: grpCaucasusDams },
         { id: 'layerCoruh', grp: grpCoruh },
         { id: 'layerMericAsi', grp: grpMericAsi },
+        { id: 'layerEdirneStations', grp: _edirneStationsLayer },
         { id: 'layerDoguKaradeniz', grp: grpDoguKaradeniz },
         { id: 'layerCeyhan', grp: grpCeyhan },
         { id: 'layerSeyhan', grp: grpSeyhan },
@@ -4440,6 +4489,7 @@
         const el = document.getElementById(b.id);
         if (el) el.checked = map.hasLayer(b.grp);
       });
+      if (typeof updateEdirneMapBtnState === 'function') updateEdirneMapBtnState();
     }
 
     function clearAllLayers() {
@@ -4447,7 +4497,7 @@
       const allGroups = [
         grpTigris, grpEuphrates, grpIraqDams, grpIraqCrossings,
         grpArasKura, grpArmeniaRivers, grpCaucasusDams,
-        grpCoruh, grpMericAsi, grpDoguKaradeniz, grpCeyhan, grpSeyhan,
+        grpCoruh, grpMericAsi, _edirneStationsLayer, grpDoguKaradeniz, grpCeyhan, grpSeyhan,
         grpAgi, grpSettlements, grpPeaks,
         owmPrecipitation, owmClouds, owmTemp, owmWind, owmPressure,
         usbsBasinsLayer, usbsRiversLayer, usbsFloodQ100Layer, usbsFloodHazardLayer, usbsFloodDepthLayer, usbsTypMeasuresLayer
@@ -4462,6 +4512,7 @@
       document.getElementById('hudActiveBasin').textContent = "Katmanlar Kapalı (Temiz Görünüm)";
       const sysStatus = document.getElementById('hudSystemStatus');
       if (sysStatus) sysStatus.textContent = "Katmanlar Kapalı";
+      if (typeof updateEdirneMapBtnState === 'function') updateEdirneMapBtnState();
     }
 
     function setBasinFilter(type) {
@@ -4605,16 +4656,23 @@
         if (!q) return;
 
         let target = null;
-        const all = [...settlements, ...peaks, ...iraqDams, ...iraqCrossings, ...iraqAgi];
+        const edirneList = (typeof _edirneLiveData !== 'undefined' && _edirneLiveData && Array.isArray(_edirneLiveData.stations))
+          ? _edirneLiveData.stations.map(s => ({ name: `${s.name} ${s.river}`, lat: s.lat, lon: s.lon, edirneId: s.id }))
+          : [];
+        const all = [...settlements, ...peaks, ...iraqDams, ...iraqCrossings, ...iraqAgi, ...edirneList];
         for (let item of all) {
-          if (item.name.toLowerCase().includes(q)) {
+          if (item.lat != null && item.lon != null && item.name.toLowerCase().includes(q)) {
             target = item;
             break;
           }
         }
 
         if (target) {
-          map.flyTo([target.lat, target.lon], 11, { duration: 1.2 });
+          if (target.edirneId && typeof focusEdirneStation === 'function') {
+            focusEdirneStation(target.edirneId, true);
+          } else {
+            map.flyTo([target.lat, target.lon], 11, { duration: 1.2 });
+          }
         } else if (q.includes("dicle")) {
           flyToExtent('ilisu_cizre');
         } else if (q.includes("zap")) {
@@ -4702,6 +4760,7 @@
       { id: 'layerCaucasusDams', grp: grpCaucasusDams },
       { id: 'layerCoruh', grp: grpCoruh },
       { id: 'layerMericAsi', grp: grpMericAsi },
+      { id: 'layerEdirneStations', grp: _edirneStationsLayer },
       { id: 'layerDoguKaradeniz', grp: grpDoguKaradeniz },
       { id: 'layerCeyhan', grp: grpCeyhan },
       { id: 'layerSeyhan', grp: grpSeyhan },
@@ -4729,6 +4788,9 @@
         el.addEventListener('change', (e) => {
           if (e.target.checked) map.addLayer(b.grp);
           else map.removeLayer(b.grp);
+          if (b.id === 'layerEdirneStations' && typeof updateEdirneMapBtnState === 'function') {
+            updateEdirneMapBtnState();
+          }
         });
       }
     });
@@ -5011,9 +5073,9 @@
         { name: 'Melet Irmağı', basin: 'Doğu Karadeniz Havzası', keywords: ['melet', 'ordu'], coords: meletCoords },
 
         // Meriç, Asi, Seyhan, Ceyhan
-        { name: 'Meriç Nehri (Maritsa / Evros)', basin: 'Meriç-Ergene Havzası', keywords: ['meriç', 'meric', 'ipsala', 'enez', 'kapıkule'], coords: mericCoords },
-        { name: 'Tunca & Meriç Nehirleri (Edirne)', basin: 'Meriç-Ergene Havzası', keywords: ['tunca', 'edirne'], coords: [[42.50, 26.55], [42.15, 26.55], [41.80, 26.56], [41.67, 26.55]] },
-        { name: 'Ergene Nehri (Meriç Kolu)', basin: 'Meriç-Ergene Havzası', keywords: ['ergene', 'çorlu', 'lüleburgaz'], coords: [[41.25, 27.95], [41.38, 27.35], [41.32, 26.85], [41.05, 26.40]] },
+        { name: 'Meriç Nehri (Maritsa / Evros)', basin: 'Meriç-Ergene Havzası', keywords: ['meriç', 'meric', 'ipsala', 'enez', 'kapıkule', 'harmanlı', 'svilengrad', 'kirişhane'], coords: mericCoords },
+        { name: 'Tunca & Meriç Nehirleri (Edirne)', basin: 'Meriç-Ergene Havzası', keywords: ['tunca', 'edirne', 'elhova', 'suakacağı'], coords: [[42.50, 26.55], [42.15, 26.55], [41.80, 26.56], [41.67, 26.55]] },
+        { name: 'Ergene Nehri (Meriç Kolu)', basin: 'Meriç-Ergene Havzası', keywords: ['ergene', 'çorlu', 'lüleburgaz', 'inanlı'], coords: [[41.25, 27.95], [41.38, 27.35], [41.32, 26.85], [41.05, 26.40]] },
         { name: 'Asi Nehri (Orontes)', basin: 'Asi Havzası', keywords: ['asi', 'orontes', 'antakya', 'hatay'], coords: asiCoords },
         { name: 'Küçük Asi / Amik Drenaj Kanalı', basin: 'Asi Havzası', keywords: ['küçük asi', 'amik'], coords: kucukAsiCoords },
         { name: 'Afrin Çayı (Asi Kolu)', basin: 'Asi Havzası', keywords: ['afrin', 'reyhanlı'], coords: afrinCoords },
@@ -5947,6 +6009,328 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
+    // -------------------------------------------------------------
+    // DSİ 11. BÖLGE (EDİRNE) MERİÇ-TUNCA-ERGENE OTOMATİK CANLI DEBİ MODÜLÜ
+    // -------------------------------------------------------------
+    const EDIRNE_DEBI_FALLBACK = {
+      source_url: 'https://edirnenehir.dsi.gov.tr/',
+      date: '2026-11-11',
+      display_date: '11.11.2026',
+      fetched_at_utc: '2026-11-11T10:45:57Z',
+      isFallback: true,
+      stations: [
+        { id: 'tunca_elhova', river: 'TUNCA', name: 'Elhova', country: 'BG', time: '08:00', discharge_m3s: 7, lat: 42.1724, lon: 26.5676 },
+        { id: 'tunca_suakacagi', river: 'TUNCA', name: 'Suakacağı', country: 'TR', time: '08:00', discharge_m3s: 7, lat: 41.8478, lon: 26.5794 },
+        { id: 'meric_harmanli', river: 'MERİÇ', name: 'Harmanlı', country: 'BG', time: '08:00', discharge_m3s: 50, lat: 41.9303, lon: 25.9015 },
+        { id: 'meric_svilengrad', river: 'MERİÇ', name: 'Svilengrad', country: 'BG', time: '08:00', discharge_m3s: 65, lat: 41.7682, lon: 26.1979 },
+        { id: 'meric_kirishane', river: 'MERİÇ', name: 'Kirişhane', country: 'TR', dsi_code: 'D01A003', time: '08:00', discharge_m3s: 189, lat: 41.6472, lon: 26.5722 },
+        { id: 'meric_ipsala', river: 'MERİÇ', name: 'İpsala', country: 'TR', time: '08:00', discharge_m3s: 211, lat: 40.9217, lon: 26.3840 },
+        { id: 'ergene_inanli', river: 'ERGENE', name: 'İnanlı', country: 'TR', time: '08:00', discharge_m3s: 2, lat: 41.2029, lon: 27.4727 },
+        { id: 'ergene_luleburgaz', river: 'ERGENE', name: 'Lüleburgaz', country: 'TR', time: '08:00', discharge_m3s: 3, lat: 41.4041, lon: 27.3555 }
+      ],
+      history: []
+    };
+
+    let _edirneLiveData = null;
+    let _edirneSelectedId = 'meric_kirishane';
+    let _edirneMarkerById = {};
+    let _edirneSyncSeq = 0;
+
+    function getEdirneRiverColor(river) {
+      const r = (river || '').toUpperCase();
+      if (r.includes('TUNCA')) return '#0EA5E9';
+      if (r.includes('ERGENE')) return '#10B981';
+      if (r.includes('ARDA')) return '#A855F7';
+      return '#F59E0B';
+    }
+
+    function updateEdirneMapBtnState() {
+      const btn = document.getElementById('btnToggleEdirneMap');
+      const chk = document.getElementById('layerEdirneStations');
+      const isOn = map.hasLayer(_edirneStationsLayer);
+      if (chk) chk.checked = isOn;
+      if (btn) {
+        btn.textContent = isOn ? '👁️ İstasyonları Gizle' : '🗺️ İstasyonları Haritada Göster';
+        btn.style.background = isOn ? '#0284C7' : '#0C4A6E';
+      }
+    }
+
+    function populateEdirneMarkers() {
+      _edirneStationsLayer.clearLayers();
+      _edirneMarkerById = {};
+      if (!_edirneLiveData || !Array.isArray(_edirneLiveData.stations)) return;
+
+      for (const s of _edirneLiveData.stations) {
+        if (typeof s.lat !== 'number' || typeof s.lon !== 'number') continue;
+        const color = getEdirneRiverColor(s.river);
+        const qTxt = (typeof s.discharge_m3s === 'number' && Number.isFinite(s.discharge_m3s)) ? `${s.discharge_m3s}` : '--';
+        const flag = s.country === 'BG' ? '🇧🇬' : '🇹🇷';
+        const ic = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(15,23,42,0.92); color:#F8FAFC; border:1.5px solid ${color}; border-radius:12px; padding:1.5px 6px; font-size:9.5px; font-weight:700; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.75); transform:translate(-50%,-50%);"><span style="width:6px;height:6px;border-radius:50%;background:${color};"></span>${escapeHtmlDsi(s.name)}: ${qTxt}</div>`,
+          iconSize: [10, 10]
+        });
+
+        const safeId = escapeHtmlDsi(s.id);
+        const codeTag = s.dsi_code ? ` · ${escapeHtmlDsi(s.dsi_code)}` : '';
+        const m = L.marker([s.lat, s.lon], { icon: ic }).bindPopup(`
+          <div class="popup-title" style="color:${color};">${flag} ${escapeHtmlDsi(s.river)} — ${escapeHtmlDsi(s.name)}${codeTag}</div>
+          <div style="font-size:10px; color:#CBD5E1; line-height:1.45; margin-bottom:6px;">
+            <div><strong>Ölçüm Tarihi:</strong> ${escapeHtmlDsi(_edirneLiveData.display_date || _edirneLiveData.date)} · ${escapeHtmlDsi(s.time || '08:00')}</div>
+            <div><strong>Gerçek Debi (DSİ 11. Bölge):</strong> <strong style="color:#38BDF8; font-size:12px;">${qTxt} m³/s</strong></div>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button type="button" onclick="fetchWeatherByCoords(${s.lat}, ${s.lon}, '${escapeHtmlDsi(s.river + ' - ' + s.name)}', true)" class="gis-btn" style="flex:1; font-size:9px; padding:3px 5px; justify-content:center; background:#0369A1; border-color:#38BDF8; color:#E0F2FE;">
+              🌦️ GloFAS &amp; Hava
+            </button>
+            <button type="button" onclick="syncEdirneStationToAnfis('${safeId}')" class="gis-btn" style="flex:1; font-size:9px; padding:3px 5px; justify-content:center; background:#6D28D9; border-color:#A78BFA; color:#F5F3FF;">
+              🧠 ANFIS Kıyasla
+            </button>
+          </div>
+        `);
+        m.addTo(_edirneStationsLayer);
+        _edirneMarkerById[s.id] = m;
+      }
+    }
+
+    function renderEdirneLivePanel() {
+      const metaEl = document.getElementById('edirneLiveMeta');
+      const selEl = document.getElementById('edirneStationSelect');
+      const tbody = document.getElementById('edirneLiveTableBody');
+      const d = _edirneLiveData;
+      if (!metaEl || !selEl || !tbody || !d) return;
+
+      const histDays = Array.isArray(d.history) ? d.history.length : 0;
+      const srcLabel = d.isFallback
+        ? '<span style="color:#FBBF24;">Yerel Önbellek (file://)</span>'
+        : '<span style="color:#34D399;">GitHub Actions · data/edirne_debi.json</span>';
+      metaEl.innerHTML = `
+        <div>📅 Tarih: <strong>${escapeHtmlDsi(d.display_date || d.date)}</strong> (08:00) · ${d.stations.length} istasyon · Arşiv: ${histDays} gün</div>
+        <div style="font-size:8.6px; color:#94A3B8;">Kaynak: ${srcLabel}</div>
+      `;
+
+      if (!d.stations.some(s => s.id === _edirneSelectedId) && d.stations.length) {
+        _edirneSelectedId = d.stations[0].id;
+      }
+
+      selEl.innerHTML = d.stations.map(s => {
+        const qTxt = typeof s.discharge_m3s === 'number' ? `${s.discharge_m3s} m³/s` : '--';
+        return `<option value="${escapeHtmlDsi(s.id)}" ${s.id === _edirneSelectedId ? 'selected' : ''}>${escapeHtmlDsi(s.river)} — ${escapeHtmlDsi(s.name)} (${qTxt})</option>`;
+      }).join('');
+
+      tbody.innerHTML = d.stations.map(s => {
+        const color = getEdirneRiverColor(s.river);
+        const flag = s.country === 'BG' ? '🇧🇬' : '🇹🇷';
+        const isSel = s.id === _edirneSelectedId;
+        const qTxt = typeof s.discharge_m3s === 'number' ? s.discharge_m3s.toLocaleString('tr-TR') : '--';
+        return `
+          <tr onclick="focusEdirneStation('${escapeHtmlDsi(s.id)}', true)" style="cursor:pointer; border-bottom:1px solid #1E293B; ${isSel ? 'background:rgba(14,165,233,0.18);' : ''}">
+            <td style="padding:3.5px 5px; font-weight:700; color:${color};">${escapeHtmlDsi(s.river)}</td>
+            <td style="padding:3.5px 5px; color:#F8FAFC;">${flag} ${escapeHtmlDsi(s.name)}</td>
+            <td style="padding:3.5px 5px; text-align:right; color:#94A3B8;">${escapeHtmlDsi(s.time || '08:00')}</td>
+            <td style="padding:3.5px 5px; text-align:right; font-weight:700; color:#38BDF8;">${qTxt}</td>
+          </tr>
+        `;
+      }).join('');
+
+      updateEdirneMapBtnState();
+    }
+
+    async function loadEdirneDebiData(forceRefresh = false) {
+      const metaEl = document.getElementById('edirneLiveMeta');
+      try {
+        const bust = forceRefresh ? `?t=${Date.now()}` : `?t=${Math.floor(Date.now() / 60000)}`;
+        const res = await fetch(`./data/edirne_debi.json${bust}`, { cache: forceRefresh ? 'reload' : 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data || !Array.isArray(data.stations) || data.stations.length === 0) {
+          throw new Error('Boş veya geçersiz JSON');
+        }
+        data.isFallback = false;
+        _edirneLiveData = data;
+      } catch (err) {
+        if (window.location.protocol === 'file:' && !_edirneLiveData) {
+          _edirneLiveData = EDIRNE_DEBI_FALLBACK;
+        } else if (!_edirneLiveData) {
+          if (metaEl) metaEl.innerHTML = `<span style="color:#F87171;">⚠️ data/edirne_debi.json yüklenemedi (${escapeHtmlDsi(err.message)}).</span>`;
+          return;
+        }
+      }
+      populateEdirneMarkers();
+      renderEdirneLivePanel();
+    }
+
+    function toggleEdirneStationsLayer(forceState = null) {
+      if (!_edirneLiveData) {
+        loadEdirneDebiData(false);
+      }
+      const turnOn = forceState !== null ? Boolean(forceState) : !map.hasLayer(_edirneStationsLayer);
+      if (turnOn) {
+        if (!map.hasLayer(_edirneStationsLayer)) map.addLayer(_edirneStationsLayer);
+        map.flyTo([41.55, 26.62], 8, { duration: 1.1 });
+      } else if (map.hasLayer(_edirneStationsLayer)) {
+        map.removeLayer(_edirneStationsLayer);
+      }
+      updateEdirneMapBtnState();
+    }
+
+    function syncEdirneSelectChange() {
+      const selEl = document.getElementById('edirneStationSelect');
+      if (selEl && selEl.value) {
+        focusEdirneStation(selEl.value, false);
+      }
+    }
+
+    function focusEdirneStation(stationId, triggerWeather = true) {
+      _edirneSelectedId = stationId;
+      renderEdirneLivePanel();
+      if (!_edirneLiveData) return;
+      const s = _edirneLiveData.stations.find(x => x.id === stationId);
+      if (!s || typeof s.lat !== 'number' || typeof s.lon !== 'number') return;
+
+      if (!map.hasLayer(_edirneStationsLayer)) map.addLayer(_edirneStationsLayer);
+      updateEdirneMapBtnState();
+      map.flyTo([s.lat, s.lon], 10, { duration: 1.1 });
+
+      const marker = _edirneMarkerById[s.id];
+      if (marker) marker.openPopup();
+
+      if (triggerWeather) {
+        fetchWeatherByCoords(s.lat, s.lon, `${s.river} - ${s.name} (DSİ)`, true);
+      }
+    }
+
+    async function syncEdirneStationToAnfis(explicitId = null) {
+      if (!_edirneLiveData || !_edirneLiveData.stations.length) {
+        await loadEdirneDebiData(false);
+      }
+      if (!_edirneLiveData || !_edirneLiveData.stations.length) return;
+      const selEl = document.getElementById('edirneStationSelect');
+      const targetId = explicitId || selEl?.value || _edirneSelectedId;
+      const s = _edirneLiveData.stations.find(x => x.id === targetId);
+      if (!s || typeof s.lat !== 'number' || typeof s.lon !== 'number') return;
+
+      _edirneSelectedId = s.id;
+      focusEdirneStation(s.id, false);
+
+      const cmpEl = document.getElementById('edirneComparisonMsg');
+      if (cmpEl) {
+        cmpEl.style.display = 'block';
+        cmpEl.innerHTML = `⏳ <strong>${escapeHtmlDsi(s.river)} — ${escapeHtmlDsi(s.name)}</strong> için Open-Meteo GloFAS &amp; ANFIS (t−2) senkronize ediliyor...`;
+      }
+
+      // Çok günlük geçmiş varsa DSİ AGİ Parser & Flood modülünü de otomatik besle
+      const histSeries = [];
+      if (Array.isArray(_edirneLiveData.history)) {
+        for (const h of _edirneLiveData.history) {
+          const val = h?.stations?.[s.id];
+          if (h?.date && typeof val === 'number' && Number.isFinite(val)) {
+            histSeries.push({ date: h.date, q: val });
+          }
+        }
+      }
+      if (histSeries.length >= 2) {
+        const csvLines = ['Date,Dischage,Name,Station,lon,lat,Basin_Area,Elevation'];
+        for (const row of histSeries) {
+          csvLines.push(`${row.date},${row.q},${s.river}_${s.name},${s.dsi_code || s.id},${s.lon},${s.lat},,`);
+        }
+        const rawEl = document.getElementById('dsiAgiRawInput');
+        if (rawEl) {
+          rawEl.value = csvLines.join('\n');
+          if (typeof parseAndLinkDsiAgi === 'function') parseAndLinkDsiAgi();
+        }
+      }
+
+      const seq = ++_edirneSyncSeq;
+      const anfisSeq = ++_anfisSeq;
+      const refDate = _edirneLiveData.date || new Date().toISOString().slice(0, 10);
+      const tMinus1 = shiftIsoDate(refDate, -1);
+      const tMinus2 = shiftIsoDate(refDate, -2);
+
+      try {
+        const [flRes, wxRes] = await Promise.allSettled([
+          fetch(`https://flood-api.open-meteo.com/v1/flood?latitude=${s.lat}&longitude=${s.lon}&daily=river_discharge&past_days=3&forecast_days=1&timezone=auto`),
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&daily=precipitation_sum&past_days=3&forecast_days=1&timezone=auto`)
+        ]);
+        if (seq !== _edirneSyncSeq || anfisSeq !== _anfisSeq) return;
+
+        let qGloT0 = null;
+        let qGloT1 = null;
+        if (flRes.status === 'fulfilled' && flRes.value.ok) {
+          const flData = await flRes.value.json();
+          const ft = flData?.daily?.time || [];
+          const fq = flData?.daily?.river_discharge || [];
+          const idx0 = ft.indexOf(refDate);
+          const idx1 = tMinus1 ? ft.indexOf(tMinus1) : -1;
+          if (idx0 >= 0 && typeof fq[idx0] === 'number') qGloT0 = fq[idx0];
+          else if (fq.length > 0 && typeof fq[fq.length - 1] === 'number') qGloT0 = fq[fq.length - 1];
+          if (idx1 >= 0 && typeof fq[idx1] === 'number') qGloT1 = fq[idx1];
+          else if (fq.length > 1 && typeof fq[fq.length - 2] === 'number') qGloT1 = fq[fq.length - 2];
+        }
+
+        let pT2 = null;
+        if (wxRes.status === 'fulfilled' && wxRes.value.ok) {
+          const wxData = await wxRes.value.json();
+          const wt = wxData?.daily?.time || [];
+          const wp = wxData?.daily?.precipitation_sum || [];
+          const idx2 = tMinus2 ? wt.indexOf(tMinus2) : -1;
+          if (idx2 >= 0 && typeof wp[idx2] === 'number') pT2 = wp[idx2];
+          else if (wp.length >= 3 && typeof wp[wp.length - 3] === 'number') pT2 = wp[wp.length - 3];
+        }
+
+        const histT1 = tMinus1 && Array.isArray(_edirneLiveData.history)
+          ? _edirneLiveData.history.find(h => h.date === tMinus1)?.stations?.[s.id] ?? null
+          : null;
+        const usedQT1 = (typeof histT1 === 'number' && Number.isFinite(histT1)) ? histT1 : qGloT1;
+        const qObs = s.discharge_m3s;
+
+        const locEl = document.getElementById('anfisSyncLocation');
+        const pt2El = document.getElementById('anfisLivePT2');
+        const qt1El = document.getElementById('anfisLiveQT1');
+        const qt0El = document.getElementById('anfisLiveQT0');
+        const hintEl = document.getElementById('anfisLagHint');
+
+        if (locEl) locEl.textContent = `${s.river}-${s.name} (DSİ ${refDate})`;
+        if (pt2El) pt2El.textContent = pT2 !== null ? `${pT2.toFixed(1)} mm` : '-- mm';
+        if (qt1El) qt1El.textContent = usedQT1 !== null ? `${usedQT1.toFixed(1)} m³/s` : '-- m³/s';
+        if (qt0El) qt0El.textContent = typeof qObs === 'number' ? `${qObs.toFixed(1)} m³/s` : '-- m³/s';
+
+        if (pT2 !== null) {
+          _anfisLastLivePT2 = pT2;
+          const p1El = document.getElementById('anfisInputP1');
+          const p2El = document.getElementById('anfisInputP2');
+          if (p1El) p1El.value = pT2.toFixed(1);
+          if (p2El) p2El.value = pT2.toFixed(1);
+          calcThiessenAreal();
+        }
+
+        const biasTxt = (typeof qObs === 'number' && qGloT0 !== null && Math.abs(qObs) > 1e-6)
+          ? ` (Fark: ${(qGloT0 - qObs) >= 0 ? '+' : ''}${(qGloT0 - qObs).toFixed(1)} m³/s / %${(((qGloT0 - qObs) / qObs) * 100).toFixed(1)})`
+          : '';
+        if (hintEl) {
+          hintEl.textContent = `DSİ Edirne [${s.name}]: P(t−2)=${pT2 !== null ? pT2.toFixed(1) : '--'} mm · Q(t−1)=${usedQT1 !== null ? usedQT1.toFixed(1) : '--'} → DSİ Qobs=${typeof qObs === 'number' ? qObs.toFixed(1) : '--'} m³/s${qGloT0 !== null ? ` · GloFAS=${qGloT0.toFixed(1)} m³/s` : ''}.`;
+        }
+        if (cmpEl) {
+          cmpEl.innerHTML = `
+            <div><strong>⚖️ DSİ vs GloFAS (${escapeHtmlDsi(s.name)}):</strong> DSİ Q<sub>obs</sub> = <strong style="color:#38BDF8;">${qObs ?? '--'} m³/s</strong> · GloFAS Q<sub>sim</sub> = <strong>${qGloT0 !== null ? qGloT0.toFixed(1) : '--'} m³/s</strong>${biasTxt}</div>
+            <div style="font-size:8.6px; color:#94A3B8; margin-top:2px;">ANFIS paneline aktarıldı: P(t−2) = ${pT2 !== null ? pT2.toFixed(1) : '--'} mm · Q(t−1) = ${usedQT1 !== null ? usedQT1.toFixed(1) : '--'} m³/s</div>
+          `;
+        }
+      } catch (err) {
+        if (seq === _edirneSyncSeq && cmpEl) {
+          cmpEl.innerHTML = `⚠️ Open-Meteo kıyaslaması alınamadı; DSİ ölçümü Q = <strong>${s.discharge_m3s ?? '--'} m³/s</strong> aktif.`;
+        }
+      }
+    }
+
+    setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => loadEdirneDebiData(false));
+      } else {
+        loadEdirneDebiData(false);
+      }
+    }, 900);
 
     async function fetchForecastData(lat, lon) {
       const container = document.getElementById('weatherForecastList');

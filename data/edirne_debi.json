@@ -1,0 +1,108 @@
+{
+  "source_url": "https://edirnenehir.dsi.gov.tr/",
+  "source_title": "DSİ 11. Bölge Müdürlüğü — Nehir Debileri",
+  "date": "2026-11-11",
+  "display_date": "11.11.2026",
+  "fetched_at_utc": "2026-11-11T10:45:57Z",
+  "status": "ok",
+  "stations": [
+    {
+      "id": "tunca_elhova",
+      "river": "TUNCA",
+      "name": "Elhova",
+      "country": "BG",
+      "time": "08:00",
+      "discharge_m3s": 7,
+      "lat": 42.1724,
+      "lon": 26.5676
+    },
+    {
+      "id": "tunca_suakacagi",
+      "river": "TUNCA",
+      "name": "Suakacağı",
+      "country": "TR",
+      "time": "08:00",
+      "discharge_m3s": 7,
+      "lat": 41.8478,
+      "lon": 26.5794
+    },
+    {
+      "id": "meric_harmanli",
+      "river": "MERİÇ",
+      "name": "Harmanlı",
+      "country": "BG",
+      "time": "08:00",
+      "discharge_m3s": 50,
+      "lat": 41.9303,
+      "lon": 25.9015
+    },
+    {
+      "id": "meric_svilengrad",
+      "river": "MERİÇ",
+      "name": "Svilengrad",
+      "country": "BG",
+      "time": "08:00",
+      "discharge_m3s": 65,
+      "lat": 41.7682,
+      "lon": 26.1979
+    },
+    {
+      "id": "meric_kirishane",
+      "river": "MERİÇ",
+      "name": "Kirişhane",
+      "country": "TR",
+      "dsi_code": "D01A003",
+      "time": "08:00",
+      "discharge_m3s": 189,
+      "lat": 41.6472,
+      "lon": 26.5722
+    },
+    {
+      "id": "meric_ipsala",
+      "river": "MERİÇ",
+      "name": "İpsala",
+      "country": "TR",
+      "time": "08:00",
+      "discharge_m3s": 211,
+      "lat": 40.9217,
+      "lon": 26.384
+    },
+    {
+      "id": "ergene_inanli",
+      "river": "ERGENE",
+      "name": "İnanlı",
+      "country": "TR",
+      "time": "08:00",
+      "discharge_m3s": 2,
+      "lat": 41.2029,
+      "lon": 27.4727
+    },
+    {
+      "id": "ergene_luleburgaz",
+      "river": "ERGENE",
+      "name": "Lüleburgaz",
+      "country": "TR",
+      "time": "08:00",
+      "discharge_m3s": 3,
+      "lat": 41.4041,
+      "lon": 27.3555
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-11-11",
+      "display_date": "11.11.2026",
+      "fetched_at_utc": "2026-11-11T10:45:57Z",
+      "stations": {
+        "tunca_elhova": 7,
+        "tunca_suakacagi": 7,
+        "meric_harmanli": 50,
+        "meric_svilengrad": 65,
+        "meric_kirishane": 189,
+        "meric_ipsala": 211,
+        "ergene_inanli": 2,
+        "ergene_luleburgaz": 3
+      }
+    }
+  ]
+}
