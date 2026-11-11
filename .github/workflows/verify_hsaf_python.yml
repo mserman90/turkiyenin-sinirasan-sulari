@@ -29,7 +29,7 @@ jobs:
       - name: Sözdizimi ve birim testlerini çalıştır
         run: |
           python -m py_compile scripts/hsaf_basin_export.py scripts/test_hsaf_basin_export.py
-          python -m unittest -v scripts/test_hsaf_basin_export.py
+          python scripts/test_hsaf_basin_export.py -v
 
       - name: Örnek CLI boru hattını çalıştır
         run: |
