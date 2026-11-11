@@ -227,12 +227,16 @@
       display: flex;
       flex-direction: column;
       z-index: 1000;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 4px 0 16px rgba(0,0,0,0.5);
     }
 
     .gis-sidebar.collapsed {
-      margin-left: -340px;
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      border-right: none !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
     }
 
     .map-stage {
@@ -242,6 +246,7 @@
       height: 100%;
       display: flex;
       overflow: hidden;
+      background: #DCE3EA;
     }
 
     .sidebar-toggle-btn {
@@ -260,7 +265,7 @@
       justify-content: center;
       cursor: pointer;
       z-index: 1001;
-      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
+      transition: background 0.2s;
     }
 
     .gis-sidebar.collapsed + .sidebar-toggle-btn {
@@ -403,9 +408,9 @@
       flex: 1;
       height: 100%;
       width: 100%;
-      background: #151F32;
+      background: #DCE3EA;
       z-index: 10;
-      contain: layout size;
+      contain: layout style;
       will-change: transform;
     }
 
@@ -823,7 +828,6 @@
 
     @media (max-width: 1180px) {
       .gis-sidebar { width: 300px; }
-      .gis-sidebar.collapsed { margin-left: -300px; }
       .sidebar-toggle-btn { left: 300px; }
       .carto-disclaimer-badge { display: none; }
       .carto-title-block { padding: 5px 12px; }
@@ -2530,9 +2534,9 @@
 
     // Karo Yükleme Performans Ayarları (Jitter ve Ağ Yükünü Engelleme)
     const TILE_PERF_OPTIONS = {
-      updateWhenIdle: true,
+      updateWhenIdle: false,
       updateWhenZooming: false,
-      keepBuffer: 3
+      keepBuffer: 4
     };
 
     const basemaps = {
@@ -4459,10 +4463,23 @@
 
     const sidebar = document.getElementById('gisSidebar');
     const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const mapStageEl = document.querySelector('.map-stage');
+    if (window.ResizeObserver && mapStageEl) {
+      let resizeRaf = null;
+      const stageResizeObserver = new ResizeObserver(() => {
+        if (resizeRaf) cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(() => {
+          resizeRaf = null;
+          map.invalidateSize({ animate: false });
+        });
+      });
+      stageResizeObserver.observe(mapStageEl);
+    }
     toggleBtn.addEventListener('click', () => {
       sidebar.classList.toggle('collapsed');
       toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
-      setTimeout(() => map.invalidateSize(), 320);
+      if (mapStageEl) void mapStageEl.offsetWidth;
+      map.invalidateSize({ animate: false });
     });
 
     document.querySelectorAll('.sidebar-tab').forEach(tab => {
