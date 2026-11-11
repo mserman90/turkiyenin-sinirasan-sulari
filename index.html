@@ -317,6 +317,39 @@
       border-color: #38BDF8;
     }
 
+    .sygm-pill {
+      background: #0F172A;
+      border: 1px solid #334155;
+      color: #94A3B8;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sygm-pill:hover {
+      border-color: #38BDF8;
+      color: #E2E8F0;
+    }
+    .sygm-pill.active {
+      background: #1D4ED8;
+      border-color: #60A5FA;
+      color: #FFFFFF;
+    }
+    .sygm-prio-pill {
+      display: inline-block;
+      font-size: 8.5px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .sygm-row-selected {
+      background: rgba(14, 165, 233, 0.22) !important;
+      outline: 1px solid rgba(56, 189, 248, 0.65);
+    }
+
     .sidebar-content {
       flex: 1;
       overflow-y: auto;
@@ -847,7 +880,7 @@
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" data-tab="tabLayers">Katmanlar</button>
         <button class="sidebar-tab" data-tab="tabWeather">🌦️ Canlı Hava & Afet</button>
-        <button class="sidebar-tab" data-tab="tabSygm">🇹🇷 SYGM 25 Havza</button>
+        <button class="sidebar-tab" data-tab="tabSygm">🧭 25 Havza & Kuraklık</button>
         <button class="sidebar-tab" data-tab="tabIraq">🇮🇶 Dicle-Fırat</button>
         <button class="sidebar-tab" data-tab="tabCaucasus">🇦🇿 Aras-Kura</button>
         <button class="sidebar-tab" data-tab="tabBasemaps">Esri Haritaları</button>
@@ -1325,20 +1358,20 @@
         <div class="tab-pane" id="tabSygm" style="display: none;">
           <div class="panel-section" style="border-color: #2563EB;">
             <div class="panel-section-title" style="color: #60A5FA;">
-              <span>🇹🇷 Tarım ve Orman Bakanlığı</span>
-              <span style="font-size: 9px; color:#93C5FD;">Havza Envanteri</span>
+              <span>🧭 25 Su Havzası & Kuraklık İzleme</span>
+              <span style="font-size: 9px; color:#93C5FD;">KTEUS Fizibilite (Kasım 2026)</span>
             </div>
             <p style="font-size:11px; color:#CBD5E1; line-height:1.5; margin-bottom:8px;">
-              Su Yönetimi Genel Müdürlüğü  sınıflandırmasına göre Türkiye <strong>25 Akarsu Havzası</strong>'na ayrılmıştır. Ülkenin yıllık toplam yüzey suyu potansiyeli ortalama <strong>~186 Milyar m³</strong>'tür.
+              Türkiye'nin <strong>25 Akarsu Havzası</strong> için yüzey suyu potansiyeli, baraj/gölet altyapısı, iklim normalleri, son 10 yıllık kuraklık geçmişi ve <strong>KTEUS</strong> (ECMWF SEAS5 · 20.625 H3 · GR2M/WEAP) yaygınlaştırma öncelik sıralaması.
             </p>
             <a href="https://www.tarimorman.gov.tr/SYGM/Link/22/Havzalarimizin-Tanitimi" target="_blank" class="gis-btn active" style="width:100%; justify-content:center; text-decoration:none; margin-bottom:8px; font-size:11px; background:#1D4ED8;">
-              🔗 SYGM Havzalarımızın Tanıtımı ↗
+              🔗 SYGM Havza Tanıtımı Kaynağı ↗
             </a>
             
             <div style="background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:10.5px; line-height:1.5;">
-              <div style="color:#38BDF8; font-weight:bold; margin-bottom:3px;">🌐 5 Sınıraşan Havzanın Payı:</div>
-              <div>• Toplam Akış: <strong>~66,34 Milyar m³/yıl (%35,6)</strong></div>
-              <div>• Fırat-Dicle (21), Aras (24), Çoruh (23), Meriç-Ergene (1) ve Asi (19) sınır aşan niteliktedir.</div>
+              <div style="color:#38BDF8; font-weight:bold; margin-bottom:3px;">🌐 5 Sınıraşan Havzanın Stratejik Payı:</div>
+              <div>• <strong>Fırat-Dicle (H21):</strong> 56.316 hm³/yıl Master Plan YÜS (TR havza payı %22,7)</div>
+              <div>• <strong>Diğer 4 Sınıraşan:</strong> Aras (H24: 4.574), Çoruh (H23: 6.981), Asi (H19: 1.782 TR içi), Meriç-Ergene (H01: 1.657 hm³/yıl)</div>
             </div>
           </div>
 
@@ -1347,55 +1380,116 @@
             <div class="panel-section-title" style="color:#7DD3FC;">Türkiye'nin 5 Sınıraşan Su Havzası</div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               
-              <div class="sygm-basin-card" onclick="flyToExtent('iraq_border')" style="background:#1E293B; border:1px solid #0284C7; border-radius:6px; padding:6px; cursor:pointer;">
+              <div class="sygm-basin-card" onclick="selectSygmBasin(21, true)" style="background:#1E293B; border:1px solid #0284C7; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#38BDF8; font-size:11px;">
-                  <span>21. Fırat-Dicle Havzası</span>
-                  <span class="badge-free" style="background:#0369A1;">%28.5 Pay</span>
+                  <span>H21 · Fırat-Dicle Havzası</span>
+                  <span class="badge-free" style="background:#0369A1;">Öncelik #19 (11p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">184.918 km² | 52,94 Mr m³/yıl | Irak, Suriye</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">176.145 km² | 56.316 hm³/yıl YÜS | Irak, Suriye, İran</div>
               </div>
 
-              <div class="sygm-basin-card" onclick="flyToExtent('caucasus')" style="background:#1E293B; border:1px solid #10B981; border-radius:6px; padding:6px; cursor:pointer;">
+              <div class="sygm-basin-card" onclick="selectSygmBasin(24, true)" style="background:#1E293B; border:1px solid #10B981; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#6EE7B7; font-size:11px;">
-                  <span>24. Aras Havzası</span>
-                  <span class="badge-free" style="background:#047857;">%2.5 Pay</span>
+                  <span>H24 · Aras Havzası</span>
+                  <span class="badge-free" style="background:#047857;">Öncelik #11 (14p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">27.548 km² | 4,63 Mr m³/yıl | Azerbaycan, Ermenistan, İran</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">27.916 km² | 4.574 hm³/yıl YÜS | Azerbaycan, Ermenistan, İran, Gürcistan</div>
               </div>
 
-              <div class="sygm-basin-card" onclick="flyToExtent('coruh')" style="background:#1E293B; border:1px solid #6366F1; border-radius:6px; padding:6px; cursor:pointer;">
+              <div class="sygm-basin-card" onclick="selectSygmBasin(23, true)" style="background:#1E293B; border:1px solid #6366F1; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#A5B4FC; font-size:11px;">
-                  <span>23. Çoruh Havzası</span>
-                  <span class="badge-free" style="background:#4338CA;">%3.4 Pay</span>
+                  <span>H23 · Çoruh Havzası</span>
+                  <span class="badge-free" style="background:#4338CA;">Öncelik #21 (10p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">19.872 km² | 6,30 Mr m³/yıl | Gürcistan (Yusufeli, Deriner)</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">22.088 km² | 6.981 hm³/yıl YÜS | Gürcistan (Yusufeli, Deriner)</div>
               </div>
 
-              <div class="sygm-basin-card" onclick="flyToExtent('meric')" style="background:#1E293B; border:1px solid #F59E0B; border-radius:6px; padding:6px; cursor:pointer;">
+              <div class="sygm-basin-card" onclick="selectSygmBasin(1, true)" style="background:#1E293B; border:1px solid #F59E0B; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#FCD34D; font-size:11px;">
-                  <span>1. Meriç-Ergene Havzası</span>
-                  <span class="badge-free" style="background:#B45309;">%0.7 Pay</span>
+                  <span>H01 · Meriç-Ergene Havzası</span>
+                  <span class="badge-free" style="background:#B45309;">Öncelik #4 (17p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">14.560 km² | 1,33 Mr m³/yıl | Bulgaristan, Yunanistan</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">14.498 km² | 1.657,4 hm³/yıl YÜS | Bulgaristan, Yunanistan</div>
               </div>
 
-              <div class="sygm-basin-card" onclick="flyToExtent('asi')" style="background:#1E293B; border:1px solid #EC4899; border-radius:6px; padding:6px; cursor:pointer;">
+              <div class="sygm-basin-card" onclick="selectSygmBasin(19, true)" style="background:#1E293B; border:1px solid #EC4899; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#F472B6; font-size:11px;">
-                  <span>19. Asi Havzası</span>
-                  <span class="badge-free" style="background:#BE185D;">%0.6 Pay</span>
+                  <span>H19 · Asi Havzası</span>
+                  <span class="badge-free" style="background:#BE185D;">Öncelik #10 (15p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">7.796 km² | 1,17 Mr m³/yıl | Lübnan, Suriye, Hatay</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">7.899 km² | 1.782 hm³/yıl TR YÜS | Lübnan, Suriye, Hatay</div>
               </div>
 
-              <!-- Doğu Karadeniz Havzası (Türkiye 2.'si ve Sarp Sınır Hattı) -->
-              <div class="sygm-basin-card" onclick="flyToExtent('dogu_karadeniz')" style="background:#1E293B; border:1px solid #0EA5E9; border-radius:6px; padding:6px; cursor:pointer;">
+              <!-- Doğu Karadeniz Havzası -->
+              <div class="sygm-basin-card" onclick="selectSygmBasin(22, true)" style="background:#1E293B; border:1px solid #0EA5E9; border-radius:6px; padding:6px; cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#38BDF8; font-size:11px;">
-                  <span>22. Doğu Karadeniz Havzası</span>
-                  <span class="badge-free" style="background:#0284C7;">%8.0 Pay</span>
+                  <span>H22 · Doğu Karadeniz Havzası</span>
+                  <span class="badge-free" style="background:#0284C7;">Öncelik #24 (9p)</span>
                 </div>
-                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">24.077 km² | 14,90 Mr m³/yıl | Sarp / Gürcistan Sınırı</div>
+                <div style="font-size:10px; color:#94A3B8; margin-top:2px;">22.870 km² | 16.426 hm³/yıl YÜS | 967 mm (En Yağışlı)</div>
               </div>
 
+            </div>
+          </div>
+
+          <!-- 25 Su Havzası Kuraklık, Öncelik & Potansiyel Envanteri (Fizibilite Raporu - Kasım 2026) -->
+          <div class="panel-section" style="border-color: #F59E0B; background: rgba(245, 158, 11, 0.04);">
+            <div class="panel-section-title" style="color: #FBBF24;">
+              <span>🌵 25 Havza Kuraklık, Öncelik & Potansiyel</span>
+              <span style="font-size: 9px; color:#FDE68A; background:rgba(245, 158, 11, 0.2); padding:1px 5px; border-radius:4px;">Tablo 5.4</span>
+            </div>
+
+            <!-- İlk 3 Öncelikli Havza & Pilot -->
+            <div style="font-size:9.5px; color:#CBD5E1; margin-bottom:5px; line-height:1.4;">
+              🏆 <strong>Yaygınlaştırma İlk 3:</strong>
+              <button class="sygm-pill" onclick="selectSygmBasin(17, true)" style="padding:1px 5px; font-size:9px;">#1 Doğu Akdeniz (23p)</button>
+              <button class="sygm-pill" onclick="selectSygmBasin(7, true)" style="padding:1px 5px; font-size:9px;">#2 B. Menderes (18p)</button>
+              <button class="sygm-pill" onclick="selectSygmBasin(20, true)" style="padding:1px 5px; font-size:9px;">#3 Ceyhan (18p)</button>
+              <button class="sygm-pill" onclick="selectSygmBasin(5, true)" style="padding:1px 5px; font-size:9px; border-color:#10B981; color:#6EE7B7;">Pilot: H05 Gediz</button>
+            </div>
+
+            <!-- Arama ve Kategori / Sıralama Filtreleri -->
+            <input type="text" id="sygmFilterInput" placeholder="Havza adı, kod (H01..H25), baraj veya ülke ara..." style="width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:5px 8px; border-radius:5px; font-size:10.5px; margin-bottom:6px;">
+
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px;" id="sygmFilterPills">
+              <button class="sygm-pill active" data-mode="all" onclick="setSygmView('all', null, this)">Tümü (25)</button>
+              <button class="sygm-pill" data-mode="transboundary" onclick="setSygmView('transboundary', null, this)">Sınıraşan (5)</button>
+              <button class="sygm-pill" data-mode="closed" onclick="setSygmView('closed', null, this)">Kapalı (4)</button>
+              <button class="sygm-pill" data-sort="priority" onclick="setSygmView(null, 'priority', this)">Öncelik #1–24</button>
+              <button class="sygm-pill" data-sort="spi" onclick="setSygmView(null, 'spi', this)">SPI-12 ↑</button>
+              <button class="sygm-pill" data-sort="yus" onclick="setSygmView(null, 'yus', this)">YÜS ↓</button>
+            </div>
+
+            <!-- 25 Havza Tablosu -->
+            <div style="max-height: 220px; overflow-y:auto; border:1px solid #334155; border-radius:5px; margin-bottom:8px;">
+              <table style="width:100%; font-size:9.5px; border-collapse:collapse;" id="sygmBasinTable">
+                <thead>
+                  <tr style="background:#0F172A; color:#94A3B8; position:sticky; top:0; z-index:2;">
+                    <th style="padding:4px 5px; text-align:left;">Havza</th>
+                    <th style="padding:4px 4px; text-align:center;">Önc.</th>
+                    <th style="padding:4px 4px; text-align:right;">YÜS (hm³)</th>
+                    <th style="padding:4px 5px; text-align:right;">SPI-12</th>
+                  </tr>
+                </thead>
+                <tbody id="sygmTableBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Seçili Havza Detay Kartı -->
+            <div id="sygmDetailCard" style="background:#0F172A; border:1px solid #334155; border-radius:6px; padding:8px; font-size:10px; line-height:1.45; margin-bottom:7px;">
+              <!-- renderSygmDetail() tarafından doldurulur -->
+            </div>
+
+            <!-- KTEUS Metodoloji & Gediz Pilotu Akordiyonu -->
+            <button type="button" onclick="toggleKteusMethod()" style="width:100%; background:#1E293B; border:1px solid #475569; color:#93C5FD; padding:5px 8px; border-radius:5px; font-size:10px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+              <span>📐 KTEUS Model Mimarisi & Gediz Pilot Detayı</span>
+              <span id="kteusMethodArrow">▼</span>
+            </button>
+            <div id="kteusMethodBox" style="display:none; background:#090D16; border:1px solid #334155; border-top:none; border-radius:0 0 5px 5px; padding:7px; font-size:9.8px; color:#CBD5E1; line-height:1.45;">
+              <div>• <strong>Tahmin & Downscaling:</strong> ECMWF (45g + 7 ay SEAS5 <code>t0..t0+6</code> + 13 ay yıllık) 30×30 km GRIB → <strong>242 MGM</strong> istasyonu → <strong>20.625</strong> Türkiye <strong>H3 altıgen</strong> hücresine oran-anomali kalibrasyonu.</div>
+              <div>• <strong>Uydu & İndisler:</strong> JRC (Toprak Nemi, FAPAR, Düşük Akım), MODIS (NDVI, EVI); PDSI, SPI-3/12, SPEI-9, PNPI-6, Deciles.</div>
+              <div>• <strong>Gediz Pilotu (H05):</strong> 17.144 km², 1.776 hm³/yıl YÜS, 1.177 / 1.175 hm³/yıl YAS, havza dışı transfer <strong>166,8 hm³/yıl</strong> (İzmir 156,6 + Uşak 10,2); <strong>131 GR2M</strong> modeli (%70 kalib. / %30 doğrulama, NSE(√Q)) → <strong>WEAP</strong> (<code>Icme/Sul/Hay/Blk/San/Enr/Mad/Tur_Hhh_aa_nnnn</code>).</div>
+              <div>• <strong>Öncelik Kriteri (25p):</strong> SSTP tamamlanma + 30 yıl ve son 10 yıl orta/çok şiddetli kurak ay sayılarının puan toplamı (Pilot H05 kapsam dışı, H01–H25 kalan 24 havza sıralı).</div>
             </div>
           </div>
 
@@ -1804,25 +1898,6 @@
             </div>
           </div>
 
-          <!-- 25 Havza Arama ve Envanter Tablosu -->
-          <div class="panel-section">
-            <div class="panel-section-title">25 Su Havzası Envanteri</div>
-            <input type="text" id="sygmFilterInput" placeholder="Havza adı veya no ara..." style="width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:5px 8px; border-radius:5px; font-size:11px; margin-bottom:6px;">
-            <div style="max-height: 240px; overflow-y:auto; border:1px solid #334155; border-radius:5px;">
-              <table style="width:100%; font-size:10px; border-collapse:collapse;" id="sygmBasinTable">
-                <thead>
-                  <tr style="background:#1E293B; color:#94A3B8; position:sticky; top:0;">
-                    <th style="padding:4px; text-align:left;">No - Havza Adı</th>
-                    <th style="padding:4px; text-align:right;">Alan</th>
-                    <th style="padding:4px; text-align:right;">Akış</th>
-                  </tr>
-                </thead>
-                <tbody id="sygmTableBody">
-                  <!-- JS dinamik render -->
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           <!-- İçme Suyu Kaynakları ve Arıtma Tesisleri (İAT) Envanteri -->
           <div class="panel-section" style="border-color: #6366F1; background: rgba(99, 102, 241, 0.05);">
@@ -2374,15 +2449,20 @@
           </tbody>
         </table>
 
-        <!-- Havza Bilgi Kutusu -->
-        <div style="margin-top:14px; background:#1E293B; border:1px solid #3B82F6; border-radius:8px; padding:10px; font-size:11px; line-height:1.6;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <strong style="color:#60A5FA; font-size:12px;">🇹🇷 Tarım ve Orman Bakanlığı Su Yönetimi Genel Müdürlüğü  25 Havza Standardı</strong>
-            <a href="https://www.tarimorman.gov.tr/SYGM/Link/22/Havzalarimizin-Tanitimi" target="_blank" style="color:#93C5FD; font-weight:bold; text-decoration:none; background:#1D4ED8; padding:3px 8px; border-radius:4px;">Tanıtım Sayfası ↗</a>
+        <!-- Havza Bilgi Kutusu (25 Havza & KTEUS Özeti) -->
+        <div style="margin-top:14px; background:#1E293B; border:1px solid #3B82F6; border-radius:8px; padding:10px; font-size:11px; line-height:1.55;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px;">
+            <strong style="color:#60A5FA; font-size:12px;">🧭 25 Su Havzası Standart Sınıflandırması & KTEUS Kuraklık Özeti</strong>
+            <a href="https://www.tarimorman.gov.tr/SYGM/Link/22/Havzalarimizin-Tanitimi" target="_blank" style="color:#93C5FD; font-weight:bold; text-decoration:none; background:#1D4ED8; padding:3px 8px; border-radius:4px; white-space:nowrap;">Referans Kaynak ↗</a>
           </div>
-          <p style="color:#CBD5E1;">
-            Türkiye'nin toplam 186 Milyar m³/yıl yüzey suyu potansiyelinin <strong>~66,34 Milyar m³'ü (%35,6'sı)</strong> yukarıda listelenen 5 sınıraşan havzada (Fırat-Dicle, Aras, Çoruh, Meriç-Ergene ve Asi) toplanmaktadır. Sol paneldeki <strong>"🇹🇷 SYGM 25 Havza"</strong> sekmesinden 25 havzanın tamamına ait yağış alanları, yıllık akışları ve yönetim planlarına ulaşabilirsiniz.
+          <p style="color:#CBD5E1; margin-bottom:6px;">
+            Türkiye'nin 25 akarsu havzasındaki yüzey suyu potansiyelinin ana eksenini 5 sınıraşan havza oluşturur (Master Plan 2026 YÜS: Fırat-Dicle <strong>56.316</strong>, Çoruh <strong>6.981</strong>, Aras <strong>4.574</strong>, Asi TR içi <strong>1.782</strong>, Meriç-Ergene <strong>1.657,4 hm³/yıl</strong>).
           </p>
+          <div style="background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; color:#E2E8F0; font-size:10.5px;">
+            <div>• <strong>KTEUS Yaygınlaştırma Öncelik İlk 5 (Tablo 5.4 / 25 puan):</strong> #1 Doğu Akdeniz (23p), #2 Büyük Menderes (18p), #3 Ceyhan (18p), #4 Meriç-Ergene (17p), #5 Konya Kapalı (17p).</div>
+            <div>• <strong>Pilot Havza (H05 Gediz):</strong> 17.144 km², 1.776 hm³/yıl YÜS, 1.177/1.175 hm³/yıl YAS, 166,8 hm³/yıl havza dışı transfer, 131 GR2M + WEAP tahsis modeli.</div>
+            <div>• <strong>Sol Panel:</strong> Ayrıntılı iklim normalleri, baraj/gölet sayıları, Ağu 2026 SPI-12 ve öncelik kırılımı için <strong>"🧭 25 Havza & Kuraklık"</strong> sekmesini açabilirsiniz.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -5122,69 +5202,189 @@
     }
 
     // -------------------------------------------------------------
-    // SYGM 25 SU HAVZASI VERİ SETİ VE TABLO MOTORU
+    // 25 SU HAVZASI VERİ SETİ (KTEUS Fizibilite Raporu - Kasım 2026) VE TABLO/DETAY MOTORU
     // -------------------------------------------------------------
     const SYGM_25_BASINS = [
-      { no: 1, name: "Meriç-Ergene Havzası", area: 14560, flow: 1.33, share: 0.7, type: "Sınıraşan (Bulgaristan, Yunanistan)", extent: "meric" },
-      { no: 2, name: "Marmara Havzası", area: 24100, flow: 8.33, share: 4.5, type: "Açık Havza (Marmara Denizi)", lat: 40.60, lon: 28.50 },
-      { no: 3, name: "Susurluk Havzası", area: 22399, flow: 5.43, share: 2.9, type: "Açık Havza (Marmara)", lat: 39.90, lon: 28.20 },
-      { no: 4, name: "Kuzey Ege Havzası", area: 10003, flow: 2.09, share: 1.1, type: "Açık Havza (Ege Denizi)", lat: 39.30, lon: 26.90 },
-      { no: 5, name: "Gediz Havzası", area: 18000, flow: 1.95, share: 1.0, type: "Açık Havza (Ege Denizi)", lat: 38.60, lon: 27.80 },
-      { no: 6, name: "Küçük Menderes Havzası", area: 6907, flow: 1.19, share: 0.6, type: "Açık Havza (Ege Denizi)", lat: 38.10, lon: 27.80 },
-      { no: 7, name: "Büyük Menderes Havzası", area: 24976, flow: 3.03, share: 1.6, type: "Açık Havza (Ege Denizi)", lat: 37.80, lon: 28.50 },
-      { no: 8, name: "Batı Akdeniz Havzası", area: 20953, flow: 8.93, share: 4.8, type: "Açık Havza (Akdeniz)", lat: 36.70, lon: 30.00 },
-      { no: 9, name: "Antalya Havzası", area: 19577, flow: 11.06, share: 5.9, type: "Açık Havza (Akdeniz)", lat: 37.00, lon: 31.00 },
-      { no: 10, name: "Burdur Gölü Havzası", area: 6374, flow: 0.50, share: 0.3, type: "Kapalı Havza", lat: 37.60, lon: 30.20 },
-      { no: 11, name: "Akarçay Havzası", area: 7605, flow: 0.49, share: 0.3, type: "Kapalı Havza", lat: 38.60, lon: 31.00 },
-      { no: 12, name: "Sakarya Havzası", area: 58160, flow: 6.40, share: 3.4, type: "Açık Havza (Karadeniz)", lat: 40.00, lon: 31.50 },
-      { no: 13, name: "Batı Karadeniz Havzası", area: 29598, flow: 9.93, share: 5.3, type: "Açık Havza (Karadeniz)", lat: 41.40, lon: 32.80 },
-      { no: 14, name: "Yeşilırmak Havzası", area: 36114, flow: 5.80, share: 3.1, type: "Açık Havza (Karadeniz)", lat: 40.60, lon: 36.00 },
-      { no: 15, name: "Kızılırmak Havzası", area: 78180, flow: 6.48, share: 3.5, type: "Açık Havza (Karadeniz)", lat: 39.50, lon: 34.50 },
-      { no: 16, name: "Konya Kapalı Havzası", area: 53850, flow: 4.52, share: 2.4, type: "Kapalı Havza", lat: 38.00, lon: 33.00 },
-      { no: 17, name: "Doğu Akdeniz Havzası", area: 22048, flow: 11.07, share: 5.9, type: "Açık Havza (Akdeniz)", lat: 36.50, lon: 33.50 },
-      { no: 18, name: "Seyhan Havzası", area: 20450, flow: 8.01, share: 4.3, type: "Akdeniz / Çukurova Havzası (HKEP)", extent: "seyhan", lat: 37.20, lon: 35.40 },
-      { no: 19, name: "Asi Havzası", area: 7796, flow: 1.17, share: 0.6, type: "Sınıraşan (Lübnan, Suriye)", extent: "asi" },
-      { no: 20, name: "Ceyhan Havzası", area: 21982, flow: 7.18, share: 3.9, type: "Akdeniz / Enerji & Amik Su Transferi (HKEP)", extent: "ceyhan_hotspots", lat: 37.35, lon: 36.30 },
-      { no: 21, name: "Fırat-Dicle Havzası", area: 184918, flow: 52.94, share: 28.5, type: "Sınıraşan (Suriye, Irak, İran)", extent: "iraq_border" },
-      { no: 22, name: "Doğu Karadeniz Havzası", area: 24077, flow: 14.90, share: 8.0, type: "Sınır Kıyı Havzası (HKEP - Sarp)", extent: "dogu_karadeniz", lat: 41.05, lon: 40.50 },
-      { no: 23, name: "Çoruh Havzası", area: 19872, flow: 6.30, share: 3.4, type: "Sınıraşan (Gürcistan)", extent: "coruh" },
-      { no: 24, name: "Aras Havzası", area: 27548, flow: 4.63, share: 2.5, type: "Sınıraşan (Ermenistan, Azerbaycan, İran)", extent: "caucasus" },
-      { no: 25, name: "Van Gölü Havzası", area: 19405, flow: 2.39, share: 1.3, type: "Kapalı Havza", lat: 38.60, lon: 43.00 }
+      { no: 1, code: "H01", name: "Meriç-Ergene Havzası", area: 14498, trShare: 1.86, pop: "1.564.362 (2024, +%36)", yus: 1657.44, yusYield: "3,62 L/s/km²", subbasins: "3 alt havza (Ergene 1.261,1, Meriç 267,6, Gala Gölü 128,7 hm³)", climate: "13,25–14,24 °C | 549–662 mm | %69,1–77,9 nem | 1,74–3,47 m/s", dams: "19 baraj, 205 gölet (Hamzadere 207,91, Çakmak 176,26, Kayalıköy 150,00 hm³)", drought10y: "18 dönem (son: 8/2022–2/2026 = 43 ay)", spi2026: 0.01, spiNote: "Normal/Nemli (%0 kuraklık, 6,0/9,5 mm, 25,8 °C)", rank: 4, score: 17, prioDetail: "SSTP:5, 30y-OŞ:3 (37ay), 30y-ÇŞ:2 (12ay), 10y-OŞ:4 (21ay), 10y-ÇŞ:3 (11ay)", cat: "transboundary", type: "Sınıraşan (Bulgaristan, Yunanistan)", extent: "meric", lat: 41.45, lon: 26.50 },
+      { no: 2, code: "H02", name: "Marmara Havzası", area: 23521, trShare: 2.96, pop: "19.349.539 (İstanbul 15,69M, +%27,7)", yus: 7441.49, yusYield: "10,23 L/s/km²", subbasins: "6 alt havza (K.Marmara 2.507,6, Körfez 1.473,9, Ağva 1.264,1, Biga 937,1, Gönen 896,3, İznik 362,4 hm³)", climate: "14,54 °C | 678,28 mm | %73 nem | ~1–4,2 m/s", dams: "67 baraj, 191 gölet (Ömerli 370,82, Gönen 227,04, Balaban 223 hm³)", drought10y: "15 dönem (son: 6/2024–2/2026 = 21 ay)", spi2026: 0.23, spiNote: "Normal/Nemli (%0 kuraklık, 7,1/10,2 mm, 25,5 °C)", rank: 12, score: 13, prioDetail: "SSTP:5, 30y-OŞ:2 (33ay), 30y-ÇŞ:1 (5ay), 10y-OŞ:4 (19ay), 10y-ÇŞ:1 (4ay)", cat: "open", type: "Açık Havza (Marmara Denizi)", lat: 40.60, lon: 28.50 },
+      { no: 3, code: "H03", name: "Susurluk Havzası", area: 24319, trShare: 3.11, pop: "Bursa kesimi 2.571.782 (2024)", yus: 4963.20, yusYield: "6,47 L/s/km²", subbasins: "8 alt havza (Simav-Susurluk 1.431,4, Manyas 1.172,3, Emet 814,3, Orhaneli 676,2, Nilüfer 535,6 hm³)", climate: "12,70 °C | 675,55 mm | %67,76 nem", dams: "45 baraj, 231 gölet (Düğüncüler 768,94, Düvertepe 625,70, Manyas 428 hm³)", drought10y: "17 dönem (son: 2/2024–1/2026 = 24 ay)", spi2026: 0.68, spiNote: "Normal/Nemli (%0,3 hafif, 5,8/8,1 mm, 24,0 °C)", rank: 13, score: 13, prioDetail: "SSTP:5, 30y-OŞ:3 (39ay), 30y-ÇŞ:1 (7ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:1 (3ay)", cat: "open", type: "Açık Havza (Marmara)", lat: 39.90, lon: 28.20 },
+      { no: 4, code: "H04", name: "Kuzey Ege Havzası", area: 9861, trShare: 1.28, pop: "Balıkesir kesimi 374.135 (2024)", yus: 1985.03, yusYield: "6,38 L/s/km²", subbasins: "3 alt havza (Orta 921,6, Alt 566,1, Üst 497,3 hm³)", climate: "16,40 °C | 614,07 mm | %66,13 nem | 2,68 m/s", dams: "31 baraj, 60 gölet (Güzelhisar 155,35, Sevişler 120,96, Bayramiç 86,50 hm³)", drought10y: "18 dönem (son: 4/2024–1/2026 = 22 ay)", spi2026: 1.21, spiNote: "Normal/Nemli (%0 kuraklık, 4,2/4,5 mm, 27,6 °C)", rank: 14, score: 13, prioDetail: "SSTP:5, 30y-OŞ:3 (36ay), 30y-ÇŞ:1 (7ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:1 (4ay)", cat: "open", type: "Açık Havza (Ege Denizi)", lat: 39.30, lon: 26.90 },
+      { no: 5, code: "H05", name: "Gediz Havzası", area: 17144, trShare: 2.18, pop: "2.143.681 (2025 TÜİK: Manisa 1,32M, İzmir 656B)", yus: 1776.01, yusYield: "3,28 L/s/km²", subbasins: "5 alt havza (Demirköprü 645,8, Ana Kol 434,8, Alaşehir 327,6, Kum 255,8, Kemalpaşa 134,1 hm³)", climate: "15,40 °C | 584,75 mm | %63,16 nem | 1,94 m/s", dams: "24 baraj, 106 gölet (Demirköprü 1.320, Gördes 453,38, Başlamış 99,77 hm³; Gölmarmara 320 hm³)", drought10y: "14 dönem (en uzun: 3/2019–5/2023 = 51 ay, son: 24 ay)", spi2026: 1.43, spiNote: "Normal/Nemli (%1,4 hafif, 4,0/6,8 mm, 27,5 °C)", rank: 0, score: null, prioDetail: "Pilot Havza — YAS: 1.177/1.175 hm³/yıl | Transfer: 166,8 hm³/yıl (İzmir 156,6 + Uşak 10,2) | 131 GR2M, 108 H3 drenaj", cat: "open", type: "Pilot Havza · Açık (Ege Denizi)", lat: 38.60, lon: 27.80 },
+      { no: 6, code: "H06", name: "Küçük Menderes Havzası", area: 6963, trShare: 0.90, pop: "İzmir kesimi 3.581.903 (2024)", yus: 624.00, yusYield: "-", subbasins: "5 alt havza", climate: "17,35 °C | 621,16 mm | %63 nem", dams: "25 baraj, 18 gölet (Bostanlı 846, Tahtalı 306,65, Beydağ 248,28 hm³)", drought10y: "12 dönem (son: 3/2024–1/2026 = 23 ay)", spi2026: 1.52, spiNote: "Normal/Nemli (%0 kuraklık, 2,9/3,9 mm, 28,7 °C)", rank: 15, score: 12, prioDetail: "SSTP:4, 30y-OŞ:2 (34ay), 30y-ÇŞ:2 (16ay), 10y-OŞ:2 (14ay), 10y-ÇŞ:2 (8ay)", cat: "open", type: "Açık Havza (Ege Denizi)", lat: 38.10, lon: 27.80 },
+      { no: 7, code: "H07", name: "Büyük Menderes Havzası", area: 26000, trShare: 3.33, pop: "2.465.677 (2024)", yus: 3047.00, yusYield: "-", subbasins: "9 alt havza", climate: "15,30 °C | 603,92 mm | %61 nem | 1,0–3,0 m/s", dams: "32 baraj, 173 gölet (Topçam 4.082, Adıgüzel 1.076, Kemer 544 hm³)", drought10y: "17 dönem (son: 2/2024–1/2026 = 24 ay)", spi2026: 1.46, spiNote: "Normal/Nemli (%0 kuraklık, 4,7/9,0 mm, 27,7 °C)", rank: 2, score: 18, prioDetail: "SSTP:5, 30y-OŞ:4 (52ay), 30y-ÇŞ:2 (11ay), 10y-OŞ:5 (25ay), 10y-ÇŞ:2 (6ay)", cat: "open", type: "Açık Havza (Ege Denizi)", lat: 37.80, lon: 28.50 },
+      { no: 8, code: "H08", name: "Batı Akdeniz Havzası", area: 21070, trShare: 2.70, pop: "Muğla kesimi 984.579 (2024)", yus: null, yusNote: "Raporda toplam YÜS belirtilmemiş (Akköprü barajı: 1.282,2 hm³/yıl; ref. ~8.930 hm³)", yusYield: "-", subbasins: "9 alt havza", climate: "16,41 °C | 745,91 mm | %61,70 nem", dams: "41 baraj, 88 gölet (Akköprü 384,5, Yapraklı 124,90, Alakır 92,75 hm³)", drought10y: "14 dönem (son: 10/2023–1/2026 = 28 ay)", spi2026: 1.03, spiNote: "Normal/Nemli (%0, 5,4/5,0 mm [+%6,7], 28,3 °C)", rank: 16, score: 12, prioDetail: "SSTP:5, 30y-OŞ:2 (34ay), 30y-ÇŞ:1 (8ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:1 (3ay)", cat: "open", type: "Açık Havza (Akdeniz)", lat: 36.70, lon: 30.00 },
+      { no: 9, code: "H09", name: "Antalya Havzası", area: 20087, trShare: 2.70, pop: "Antalya kesimi 2.316.337 (2024)", yus: 12944.12, yusYield: "-", subbasins: "10 alt havza", climate: "14,71 °C | 701,19 mm | %61,58 nem", dams: "31 baraj, 106 gölet (Sücüllü 8.200, Karacaören-1 1.308, Dim 239,05 hm³)", drought10y: "14 dönem (son: 12/2023–1/2026 = 26 ay)", spi2026: 1.42, spiNote: "Normal/Nemli (%0 kuraklık, 6,9/9,9 mm, 26,4 °C)", rank: 17, score: 12, prioDetail: "SSTP:5, 30y-OŞ:2 (31ay), 30y-ÇŞ:1 (8ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:1 (3ay)", cat: "open", type: "Açık Havza (Akdeniz)", lat: 37.00, lon: 31.00 },
+      { no: 10, code: "H10", name: "Burdur Gölü Havzası", area: 6296, trShare: 0.80, pop: "238.414 (2024)", yus: 233.72, yusYield: "-", subbasins: "6 alt havza", climate: "12,93 °C | 496,65 mm | %59,23 nem", dams: "3 baraj, 52 gölet (Karaçal 76, Karamanlı 24,81, Bademli 6,59 hm³)", drought10y: "15 dönem (son: 12/2023–1/2026 = 26 ay)", spi2026: 1.95, spiNote: "Normal/Nemli (%0 kuraklık, 6,8/13,6 mm, 25,7 °C)", rank: 20, score: 10, prioDetail: "SSTP:1, 30y-OŞ:2 (35ay), 30y-ÇŞ:2 (11ay), 10y-OŞ:4 (20ay), 10y-ÇŞ:1 (5ay)", cat: "closed", type: "Kapalı Havza", lat: 37.60, lon: 30.20 },
+      { no: 11, code: "H11", name: "Akarçay Havzası", area: 7995, trShare: 1.02, pop: "Afyonkarahisar kesimi 529.876 (2024)", yus: 431.70, yusYield: "-", subbasins: "5 alt havza", climate: "11,71 °C | 464,78 mm | %61,41 nem", dams: "9 baraj, 62 gölet (Selevir 70, Akdeğirmen 50, Seyitler 36,71 hm³)", drought10y: "15 dönem (son: 12/2023–2/2026 = 27 ay)", spi2026: 1.65, spiNote: "Normal/Nemli (%0 kuraklık, 3,6/16,4 mm, 24,3 °C)", rank: 7, score: 16, prioDetail: "SSTP:4, 30y-OŞ:4 (47ay), 30y-ÇŞ:2 (16ay), 10y-OŞ:4 (21ay), 10y-ÇŞ:2 (6ay)", cat: "closed", type: "Kapalı Havza", lat: 38.60, lon: 31.00 },
+      { no: 12, code: "H12", name: "Sakarya Havzası", area: 63302, trShare: 8.08, pop: "Ankara kesimi 5.730.953 (2024)", yus: 6487.90, yusYield: "-", subbasins: "6 alt havza", climate: "11,87 °C | 482,59 mm | %65 nem", dams: "57 baraj, 321 gölet (Sarıyar 1.900, Çamlıdere 1.220,38, Gökçekaya 910 hm³)", drought10y: "17 dönem (son: 2/2024–2/2026 = 25 ay)", spi2026: 0.86, spiNote: "Normal/Nemli (%0 kuraklık, 6,1/12,2 mm, 24,0 °C)", rank: 18, score: 11, prioDetail: "SSTP:5, 30y-OŞ:2 (35ay), 30y-ÇŞ:1 (6ay), 10y-OŞ:2 (11ay), 10y-ÇŞ:1 (1ay)", cat: "open", type: "Açık Havza (Karadeniz)", lat: 40.00, lon: 31.50 },
+      { no: 13, code: "H13", name: "Batı Karadeniz Havzası", area: 28830, trShare: 3.69, pop: "Zonguldak kesimi 586.802 (2024)", yus: 10797.30, yusYield: "-", subbasins: "5 alt havza", climate: "11,83 °C | 743,66 mm | %73 nem", dams: "31 baraj, 69 gölet (Melen 693,54, Andıraz 232,62, Köprübaşı 199,30 hm³)", drought10y: "15 dönem (son: 7/2025–1/2026 = 7 ay)", spi2026: 0.75, spiNote: "Normal/Nemli (%0 kuraklık, 26,8/27,3 mm, 22,6 °C)", rank: 23, score: 9, prioDetail: "SSTP:5, 30y-OŞ:1 (19ay), 30y-ÇŞ:1 (4ay), 10y-OŞ:1 (8ay), 10y-ÇŞ:1 (3ay)", cat: "open", type: "Açık Havza (Karadeniz)", lat: 41.40, lon: 32.80 },
+      { no: 14, code: "H14", name: "Yeşilırmak Havzası", area: 39595, trShare: 5.07, pop: "2.591.594 (2024, Samsun 1,03M)", yus: 7046.00, yusYield: "-", subbasins: "5 alt havza", climate: "11,68 °C | 508,78 mm | %64 nem | 0,6–3,4 m/s", dams: "59 baraj, 256 gölet (Kılıçkaya 1.400, Çekerek 1.310, Hasan Uğurlu 1.080 hm³)", drought10y: "14 dönem (son: 2/2024–1/2026 = 24 ay)", spi2026: 1.59, spiNote: "Normal/Nemli (%0, 30,3/21,2 mm [+%42,9], 22,6 °C)", rank: 9, score: 15, prioDetail: "SSTP:5, 30y-OŞ:2 (31ay), 30y-ÇŞ:3 (17ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:2 (10ay)", cat: "open", type: "Açık Havza (Karadeniz)", lat: 40.60, lon: 36.00 },
+      { no: 15, code: "H15", name: "Kızılırmak Havzası", area: 82182, trShare: 10.49, pop: "Kayseri kesimi 1.208.700 (2024)", yus: 6988.40, yusYield: "-", subbasins: "7 alt havza (Türkiye'nin 2. büyük havzası)", climate: "10,79 °C | 439,95 mm | %65 nem", dams: "77 baraj, 319 gölet (Hirfanlı 5.980, Boyabat 3.557, Obruk 592,81 hm³)", drought10y: "12 dönem (son: 1/2024–1/2026 = 25 ay)", spi2026: 0.97, spiNote: "Normal/Nemli (%0 kuraklık, 12,9/14,5 mm, 22,5 °C)", rank: 8, score: 16, prioDetail: "SSTP:5, 30y-OŞ:3 (42ay), 30y-ÇŞ:2 (15ay), 10y-OŞ:4 (22ay), 10y-ÇŞ:2 (10ay)", cat: "open", type: "Açık Havza (Karadeniz)", lat: 39.50, lon: 34.50 },
+      { no: 16, code: "H16", name: "Konya Kapalı Havzası", area: 49930, trShare: 6.36, pop: "Konya kesimi 2.037.690 (2024)", yus: 2407.48, yusYield: "-", subbasins: "9 alt havza + Tuz Gölü (Master Plan alanı: 47.960 km²)", climate: "11,80 °C | 394,56 mm (En kurak) | %61 nem", dams: "19 baraj, 138 gölet (Apa 171,6, Mamasın 165,8, Gödet 158 hm³)", drought10y: "15 dönem (son: 12/2023–3/2026 = 28 ay)", spi2026: 1.13, spiNote: "Normal/Nemli (%0 kuraklık, 7,2/8,9 mm, 23,9 °C)", rank: 5, score: 17, prioDetail: "SSTP:4, 30y-OŞ:3 (39ay), 30y-ÇŞ:3 (22ay), 10y-OŞ:3 (17ay), 10y-ÇŞ:4 (16ay)", cat: "closed", type: "Kapalı Havza (En Düşük Yağış)", lat: 38.00, lon: 33.00 },
+      { no: 17, code: "H17", name: "Doğu Akdeniz Havzası", area: 21683, trShare: 2.76, pop: "2.050.698 (2024, Mersin 1,88M)", yus: 7560.00, yusYield: "-", subbasins: "7 alt havza (Bölüm 3.17.4 Master Plan YÜS)", climate: "16,32 °C | 614,61 mm | %62,80 nem", dams: "Rapor alt bölümünde özet tablo dışında tutulmuş", drought10y: "13 dönem (son: 8/2022–1/2026 = 42 ay)", spi2026: 1.65, spiNote: "Normal/Nemli (%0, 15,0/9,6 mm [+%55,2], 27,0 °C)", rank: 1, score: 23, prioDetail: "SSTP:5, 30y-OŞ:5 (60ay), 30y-ÇŞ:4 (25ay), 10y-OŞ:5 (23ay), 10y-ÇŞ:4 (17ay)", cat: "open", type: "Açık Havza (Akdeniz · Öncelik #1)", lat: 36.50, lon: 33.50 },
+      { no: 18, code: "H18", name: "Seyhan Havzası", area: 22035, trShare: 2.83, pop: "2.105.933 (2024)", yus: 6204.00, yusYield: "-", subbasins: "4 alt havza", climate: "12,93 °C | 540 mm | %62,76 nem | 1,26–3,14 m/s", dams: "23 baraj, 42 gölet (Çatalan 2.100, Seyhan 1.200, Yedigöze 642,82 hm³)", drought10y: "14 dönem (son: 12/2023–2/2026 = 27 ay)", spi2026: 1.13, spiNote: "Normal/Nemli (%0, 17,6/14,2 mm [+%23,8], 24,4 °C)", rank: 6, score: 17, prioDetail: "SSTP:4, 30y-OŞ:3 (39ay), 30y-ÇŞ:3 (21ay), 10y-OŞ:4 (22ay), 10y-ÇŞ:3 (14ay)", cat: "open", type: "Akdeniz / Çukurova Havzası (HKEP)", extent: "seyhan", lat: 37.20, lon: 35.40 },
+      { no: 19, code: "H19", name: "Asi Havzası", area: 7899, trShare: 1.00, pop: "1.739.092 (2024, Hatay 1,56M)", yus: 1782.00, yusNote: "TR içi: 1.782 hm³/yıl (Havza geneli 2.470–2.800; Master Plan alanı 8.007 km²)", yusYield: "-", subbasins: "3 alt havza", climate: "18,50 °C (En sıcak) | 815,60 mm | %63,99 nem | 1,9 m/s", dams: "Büyük Karaçay, Tahtaköprü, Reyhanlı / Yarseli", drought10y: "14 dönem (son: 9/2020–1/2026 = 65 ay)", spi2026: 1.67, spiNote: "Normal/Nemli (%0, 26,7/19,2 mm [+%39,2], 29,1 °C)", rank: 10, score: 15, prioDetail: "SSTP:0, 30y-OŞ:3 (37ay), 30y-ÇŞ:5 (35ay), 10y-OŞ:2 (14ay), 10y-ÇŞ:5 (23ay)", cat: "transboundary", type: "Sınıraşan (Lübnan, Suriye)", extent: "asi", lat: 36.20, lon: 36.16 },
+      { no: 20, code: "H20", name: "Ceyhan Havzası", area: 21391, trShare: 2.75, pop: "2.092.638 (2024)", yus: 7734.00, yusYield: "-", subbasins: "3 alt havza", climate: "14,89 °C | 626,52 mm | %61,02 nem", dams: "30 baraj, 74 gölet (Menzelet 2.088, Aslantaş 1.840, Sır 1.123,27 hm³)", drought10y: "14 dönem (son: 9/2020–2/2026 = 66 ay)", spi2026: 1.16, spiNote: "Normal/Nemli (%0, 12,0/10,7 mm [+%12], 26,6 °C)", rank: 3, score: 18, prioDetail: "SSTP:0, 30y-OŞ:3 (43ay), 30y-ÇŞ:5 (34ay), 10y-OŞ:5 (23ay), 10y-ÇŞ:5 (19ay)", cat: "open", type: "Akdeniz / HKEP · Öncelik #3", extent: "ceyhan_hotspots", lat: 37.35, lon: 36.30 },
+      { no: 21, code: "H21", name: "Fırat-Dicle Havzası", area: 176145, trShare: 22.71, pop: "13.161.107 (2024: Fırat 9,12M + Dicle 4,05M)", yus: 56316.00, yusNote: "Fırat 31.133 + Dicle 25.183 hm³/yıl (Klasik SYGM ref: 184.918 km², 52,94 Mr m³)", yusYield: "-", subbasins: "9 alt havza (Fırat 4: 121.448 km² | Dicle 5: 54.697 km²)", climate: "Fırat 12,71 °C / 521 mm | Dicle 12,22 °C / 604 mm | %55–57 nem", dams: "203 baraj, 327 gölet (Atatürk 48.700, Keban 20.600, Ilısu 10.410, Karakaya 9.580, Silvan 7.013 hm³)", drought10y: "11 dönem (son: 10/2024–1/2026 = 16 ay)", spi2026: 1.11, spiNote: "Normal/Nemli (%0, 8,8/5,8 mm [+%52,9], 26,6 °C)", rank: 19, score: 11, prioDetail: "SSTP:0, 30y-OŞ:3 (39ay), 30y-ÇŞ:2 (12ay), 10y-OŞ:3 (18ay), 10y-ÇŞ:3 (11ay)", cat: "transboundary", type: "Sınıraşan (Suriye, Irak, İran)", extent: "iraq_border", lat: 37.65, lon: 40.30 },
+      { no: 22, code: "H22", name: "Doğu Karadeniz Havzası", area: 22870, trShare: 2.94, pop: "Trabzon kesimi 822.266 (2024)", yus: 16426.30, yusYield: "-", subbasins: "9 alt havza (TR22.M5.1–9)", climate: "12,48 °C | 967,35 mm (En yağışlı) | %67,64 nem", dams: "18 baraj, 12 gölet (Torul 136,84, Topçam 132,6, Kürtün 80,25 hm³)", drought10y: "12 dönem (son: 2/2024–10/2024 = 9 ay)", spi2026: 0.71, spiNote: "Normal/Nemli (%0,3 hafif, 73,4/61,8 mm [+%18,7], 23,3 °C)", rank: 24, score: 9, prioDetail: "SSTP:5, 30y-OŞ:1 (17ay), 30y-ÇŞ:1 (2ay), 10y-OŞ:1 (6ay), 10y-ÇŞ:1 (2ay)", cat: "open", type: "Sınır Kıyı Havzası (HKEP - Sarp)", extent: "dogu_karadeniz", lat: 41.05, lon: 40.50 },
+      { no: 23, code: "H23", name: "Çoruh Havzası", area: 22088, trShare: 2.62, pop: "302.010 (2024, -%7,2)", yus: 6981.00, yusNote: "TR içi Master Plan alanı 20.406 km², TR dışı ~1.833 km²", yusYield: "-", subbasins: "7 TR alt havzası", climate: "9,57 °C | 706,53 mm (Hopa 2.235 mm) | %64,75 nem | 1,2–2,4 m/s", dams: "25 baraj, 85 gölet (Yusufeli 2.130, Deriner 1.969, Gelintaş-2 1.740 hm³)", drought10y: "12 dönem (son: 7/2022–5/2023 = 11 ay)", spi2026: 0.82, spiNote: "Normal/Nemli (%0, 65,8/47,4 mm [+%38,7], 21,7 °C)", rank: 21, score: 10, prioDetail: "SSTP:4, 30y-OŞ:1 (25ay), 30y-ÇŞ:1 (9ay), 10y-OŞ:2 (14ay), 10y-ÇŞ:2 (7ay)", cat: "transboundary", type: "Sınıraşan (Gürcistan)", extent: "coruh", lat: 41.15, lon: 41.70 },
+      { no: 24, code: "H24", name: "Aras Havzası", area: 27916, trShare: 3.65, pop: "802.989 (2024, -%9,2)", yus: 4574.00, yusYield: "-", subbasins: "3 alt havza", climate: "7,05 °C (En soğuk) | 459,24 mm | %65,21 nem | 1,2–2,71 m/s", dams: "34 baraj, 41 gölet (Söylemez 1.294,96, Karakurt 590,52 hm³, Koçköy)", drought10y: "12 dönem (son: 7/2022–6/2023 = 12 ay)", spi2026: 1.56, spiNote: "Normal/Nemli (%0, 44,3/32,9 mm [+%34,6], 21,1 °C)", rank: 11, score: 14, prioDetail: "SSTP:4, 30y-OŞ:2 (30ay), 30y-ÇŞ:2 (10ay), 10y-OŞ:4 (19ay), 10y-ÇŞ:2 (7ay)", cat: "transboundary", type: "Sınıraşan (Ermenistan, Azerbaycan, İran, Gürcistan)", extent: "caucasus", lat: 40.25, lon: 43.30 },
+      { no: 25, code: "H25", name: "Van Gölü Havzası", area: 14270, trShare: 2.33, pop: "Van kesimi 1.040.143 (2024)", yus: 2607.98, yusYield: "-", subbasins: "10 alt havza", climate: "8,17 °C | 469,18 mm | %60,75 nem", dams: "8 baraj, 57 gölet (Sarımehmet 133,37, Zernek 105,76, Morgedik 102,50 hm³)", drought10y: "16 dönem (son: 12/2024–1/2026 = 14 ay)", spi2026: 0.59, spiNote: "Normal/Nemli (%1,2 hafif, 3,8/4,2 mm, 23,3 °C)", rank: 22, score: 10, prioDetail: "SSTP:0, 30y-OŞ:3 (36ay), 30y-ÇŞ:1 (9ay), 10y-OŞ:4 (19ay), 10y-ÇŞ:2 (6ay)", cat: "closed", type: "Kapalı Havza", lat: 38.60, lon: 43.00 }
     ];
+
+    let sygmViewMode = 'all';
+    let sygmSortMode = 'no';
+    let selectedSygmNo = 17;
+
+    function toggleKteusMethod() {
+      const box = document.getElementById('kteusMethodBox');
+      const arrow = document.getElementById('kteusMethodArrow');
+      if (!box) return;
+      const open = box.style.display === 'none';
+      box.style.display = open ? 'block' : 'none';
+      if (arrow) arrow.textContent = open ? '▲' : '▼';
+    }
+
+    function setSygmView(mode, sort, btnEl) {
+      if (mode !== null) {
+        sygmViewMode = mode;
+        sygmSortMode = 'no';
+      }
+      if (sort !== null) {
+        sygmSortMode = sort;
+      }
+      document.querySelectorAll('#sygmFilterPills .sygm-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      const filterEl = document.getElementById('sygmFilterInput');
+      renderSygmTable(filterEl ? filterEl.value : '');
+    }
+
+    function openSygmLiveWeather(basinNo) {
+      const b = SYGM_25_BASINS.find(x => x.no === basinNo);
+      if (!b) return;
+      const weatherTab = document.querySelector('.sidebar-tab[data-tab="tabWeather"]');
+      if (weatherTab) weatherTab.click();
+      if (typeof fetchWeatherByCoords === 'function') {
+        fetchWeatherByCoords(b.lat, b.lon, `${b.code} ${b.name}`);
+      }
+    }
+
+    function selectSygmBasin(basinNo, shouldFly = false) {
+      selectedSygmNo = basinNo;
+      const b = SYGM_25_BASINS.find(x => x.no === basinNo);
+      if (!b) return;
+      renderSygmDetail(b);
+      const filterEl = document.getElementById('sygmFilterInput');
+      renderSygmTable(filterEl ? filterEl.value : '');
+      if (shouldFly) {
+        if (b.extent) {
+          flyToExtent(b.extent);
+        } else if (b.lat && b.lon) {
+          map.flyTo([b.lat, b.lon], 8, { duration: 1.2 });
+        }
+      }
+    }
+
+    function renderSygmDetail(b) {
+      const card = document.getElementById('sygmDetailCard');
+      if (!card || !b) return;
+      const prioLabel = b.rank === 0
+        ? `<span class="sygm-prio-pill" style="background:#065F46; color:#6EE7B7;">PİLOT HAVZA</span>`
+        : `<span class="sygm-prio-pill" style="background:${b.rank <= 3 ? '#B45309' : (b.rank <= 10 ? '#1D4ED8' : '#334155')}; color:#F8FAFC;">Öncelik #${b.rank}/24 (${b.score}/25p)</span>`;
+      const yusDisplay = b.yus !== null
+        ? `${b.yus.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} hm³/yıl${b.yusYield && b.yusYield !== '-' ? ` (${b.yusYield})` : ''}`
+        : (b.yusNote || 'Belirtilmemiş');
+      const yusExtra = b.yus !== null && b.yusNote ? `<div style="font-size:9px; color:#94A3B8; margin-top:1px;">${b.yusNote}</div>` : '';
+      const spiColor = b.spi2026 < 0.3 ? '#FBBF24' : '#34D399';
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px; margin-bottom:5px;">
+          <div>
+            <div style="font-size:11.5px; font-weight:700; color:#38BDF8;">${b.code} · ${b.name}</div>
+            <div style="font-size:9.5px; color:#94A3B8;">${b.type}</div>
+          </div>
+          ${prioLabel}
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; margin-bottom:5px; padding:5px; background:#1E293B; border-radius:4px;">
+          <div>📏 <strong>Alan:</strong> ${b.area.toLocaleString('tr-TR')} km² (%${b.trShare.toLocaleString('tr-TR')})</div>
+          <div>👥 <strong>Nüfus:</strong> ${b.pop}</div>
+          <div style="grid-column:span 2;">💧 <strong>YÜS Potansiyeli:</strong> <span style="color:#7DD3FC;">${yusDisplay}</span>${yusExtra}</div>
+          <div style="grid-column:span 2;">🌡️ <strong>İklim:</strong> ${b.climate}</div>
+          <div style="grid-column:span 2;">🗺️ <strong>Alt Havzalar:</strong> ${b.subbasins}</div>
+          <div style="grid-column:span 2;">🏗️ <strong>Depolama:</strong> ${b.dams}</div>
+          <div style="grid-column:span 2;">🏜️ <strong>Son 10 Yıl Kuraklık:</strong> ${b.drought10y}</div>
+          <div style="grid-column:span 2;">📉 <strong>Ağu 2026 SPI-12:</strong> <strong style="color:${spiColor};">${b.spi2026.toFixed(2)}</strong> — ${b.spiNote}</div>
+          <div style="grid-column:span 2;">⚖️ <strong>Kriter Kırılımı:</strong> <span style="color:#E2E8F0;">${b.prioDetail}</span></div>
+        </div>
+        <div style="display:flex; gap:5px;">
+          <button type="button" onclick="selectSygmBasin(${b.no}, true)" class="gis-btn active" style="flex:1; justify-content:center; font-size:9.5px; padding:4px 6px; background:#0284C7;">
+            🗺️ Havzaya Odaklan
+          </button>
+          <button type="button" onclick="openSygmLiveWeather(${b.no})" class="gis-btn" style="flex:1; justify-content:center; font-size:9.5px; padding:4px 6px; background:#0F172A; border-color:#38BDF8; color:#BAE6FD;">
+            🌦️ Canlı Hava & Taşkın Debisi
+          </button>
+        </div>
+      `;
+    }
 
     function renderSygmTable(filterText = '') {
       const tbody = document.getElementById('sygmTableBody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      const q = filterText.toLowerCase();
+      const q = filterText.trim().toLowerCase();
 
-      SYGM_25_BASINS.filter(b => b.name.toLowerCase().includes(q) || b.no.toString().includes(q) || b.type.toLowerCase().includes(q)).forEach(b => {
+      let list = SYGM_25_BASINS.filter(b => {
+        if (sygmViewMode === 'transboundary' && b.cat !== 'transboundary') return false;
+        if (sygmViewMode === 'closed' && b.cat !== 'closed') return false;
+        if (!q) return true;
+        return b.name.toLowerCase().includes(q)
+          || b.code.toLowerCase().includes(q)
+          || b.no.toString() === q
+          || b.type.toLowerCase().includes(q)
+          || b.dams.toLowerCase().includes(q);
+      });
+
+      if (sygmSortMode === 'priority') {
+        list = [...list].sort((a, b) => (a.rank === 0 ? 99 : a.rank) - (b.rank === 0 ? 99 : b.rank));
+      } else if (sygmSortMode === 'spi') {
+        list = [...list].sort((a, b) => a.spi2026 - b.spi2026);
+      } else if (sygmSortMode === 'yus') {
+        list = [...list].sort((a, b) => (b.yus ?? -1) - (a.yus ?? -1));
+      } else {
+        list = [...list].sort((a, b) => a.no - b.no);
+      }
+
+      list.forEach(b => {
         const tr = document.createElement('tr');
-        const isTrans = b.type.startsWith('Sınıraşan');
+        const isTrans = b.cat === 'transboundary';
+        const isSelected = b.no === selectedSygmNo;
         tr.style.cursor = 'pointer';
         tr.style.borderBottom = '1px solid #1E293B';
-        if (isTrans) tr.style.background = 'rgba(37, 99, 235, 0.15)';
-        
+        if (isTrans) tr.style.background = 'rgba(37, 99, 235, 0.14)';
+        if (isSelected) tr.classList.add('sygm-row-selected');
+
+        const prioBadge = b.rank === 0
+          ? `<span class="sygm-prio-pill" style="background:#065F46; color:#6EE7B7;">Pilot</span>`
+          : `<span class="sygm-prio-pill" style="background:${b.rank <= 3 ? '#B45309' : (b.rank <= 10 ? '#1D4ED8' : '#1E293B')}; color:${b.rank <= 10 ? '#FFFFFF' : '#CBD5E1'};">#${b.rank} (${b.score}p)</span>`;
+        const yusTxt = b.yus !== null ? Math.round(b.yus).toLocaleString('tr-TR') : '~8.930*';
+        const spiColor = b.spi2026 < 0.3 ? '#FBBF24' : '#34D399';
+
         tr.innerHTML = `
-          <td style="padding:5px; font-weight:${isTrans ? 'bold' : 'normal'}; color:${isTrans ? '#60A5FA' : '#CBD5E1'};">
-            ${b.no}. ${b.name} ${isTrans ? '<span style="font-size:8px; background:#1D4ED8; color:white; padding:1px 3px; border-radius:3px;">Sınıraşan</span>' : ''}
+          <td style="padding:4px 5px; font-weight:${isTrans || b.rank <= 3 ? '600' : 'normal'}; color:${isTrans ? '#60A5FA' : '#E2E8F0'};">
+            ${b.code} ${b.name.replace(' Havzası', '')} ${isTrans ? '<span style="font-size:8px; background:#1D4ED8; color:white; padding:0 3px; border-radius:3px;">Sınıraşan</span>' : ''}
           </td>
-          <td style="padding:5px; text-align:right; color:#94A3B8;">${b.area.toLocaleString('tr-TR')} km²</td>
-          <td style="padding:5px; text-align:right; color:#38BDF8; font-weight:bold;">${b.flow.toFixed(2)} Mr m³</td>
+          <td style="padding:4px 3px; text-align:center;">${prioBadge}</td>
+          <td style="padding:4px 4px; text-align:right; color:#7DD3FC;">${yusTxt}</td>
+          <td style="padding:4px 5px; text-align:right; color:${spiColor}; font-weight:600;">${b.spi2026.toFixed(2)}</td>
         `;
 
-        tr.addEventListener('click', () => {
-          if (b.extent) {
-            flyToExtent(b.extent);
-          } else if (b.lat && b.lon) {
-            map.flyTo([b.lat, b.lon], 8, { duration: 1.2 });
-          }
-        });
+        tr.addEventListener('click', () => selectSygmBasin(b.no, true));
         tbody.appendChild(tr);
       });
     }
 
     renderSygmTable();
+    selectSygmBasin(selectedSygmNo, false);
     const sygmFilterEl = document.getElementById('sygmFilterInput');
     if (sygmFilterEl) {
       sygmFilterEl.addEventListener('input', (e) => {
