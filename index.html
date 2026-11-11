@@ -1326,6 +1326,139 @@
             </div>
           </div>
 
+          <!-- Thiessen Yağış-Akış & ANFIS Debi Tahmin Bilgilendirme Aracı (Demir vd., 2023) -->
+          <div class="panel-section" id="anfisToolSection" style="border-color: #8B5CF6; background: rgba(139, 92, 246, 0.06);">
+            <div class="panel-section-title" style="color: #C4B5FD;">
+              <span>🧠 Thiessen Yağış-Akış & ANFIS Modeli</span>
+              <span style="font-size: 8.5px; color:#EDE9FE; background:#6D28D9; padding:1px 5px; border-radius:4px;">Demir vd., 2023</span>
+            </div>
+            <p style="font-size:10px; color:#CBD5E1; line-height:1.45; margin-bottom:6px;">
+              Havza yağışını <strong>Thiessen Poligonları</strong> (<code>P<sub>ort</sub> = Σ(Pᵢ·Aᵢ) / A</code>) ile mekansallaştıran ve <strong>(t−2). gün yağış</strong> ile <strong>(t−1). gün akım</strong> gecikmelerini kullanan Takagi-Sugeno <strong>ANFIS</strong> günlük ortalama debi tahmin metodolojisi.
+            </p>
+
+            <!-- Mod Geçişi -->
+            <div style="display:flex; gap:4px; margin-bottom:7px;" id="anfisModeTabs">
+              <button type="button" class="sygm-pill active" data-anfis-tab="thiessen" onclick="switchAnfisTab('thiessen', this)" style="flex:1; text-align:center;">🧮 Thiessen (t−2) & Canlı Akış</button>
+              <button type="button" class="sygm-pill" data-anfis-tab="kizilirmak" onclick="switchAnfisTab('kizilirmak', this)" style="flex:1; text-align:center;">📐 Kızılırmak ANFIS Kıyas</button>
+            </div>
+
+            <!-- Panel A: Canlı Gecikme Özeti + Thiessen Hesaplayıcı -->
+            <div id="anfisPaneThiessen">
+              <div style="background:#0F172A; border:1px solid #4C1D95; border-radius:6px; padding:6px 7px; margin-bottom:6px; font-size:9.8px; line-height:1.45;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:4px;">
+                  <strong style="color:#DDD6FE;">⏱️ Seçili Kesit Gecikme Zinciri:</strong>
+                  <span id="anfisSyncLocation" style="font-size:8.5px; color:#A78BFA; text-align:right;">Cizre / Dicle Sınırı</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; text-align:center;">
+                  <div style="background:#1E293B; border-radius:4px; padding:4px 3px;">
+                    <div style="font-size:8px; color:#94A3B8;">P(t−2) YAĞIŞ</div>
+                    <div id="anfisLivePT2" style="font-size:11px; font-weight:700; color:#38BDF8;">-- mm</div>
+                  </div>
+                  <div style="background:#1E293B; border-radius:4px; padding:4px 3px;">
+                    <div style="font-size:8px; color:#94A3B8;">Q(t−1) DÜN</div>
+                    <div id="anfisLiveQT1" style="font-size:11px; font-weight:700; color:#FBBF24;">-- m³/s</div>
+                  </div>
+                  <div style="background:#1E293B; border-radius:4px; padding:4px 3px;">
+                    <div style="font-size:8px; color:#94A3B8;">Q(t) BUGÜN</div>
+                    <div id="anfisLiveQT0" style="font-size:11px; font-weight:700; color:#34D399;">-- m³/s</div>
+                  </div>
+                </div>
+                <div id="anfisLagHint" style="font-size:9px; color:#94A3B8; margin-top:4px;">
+                  Fiziksel ilke: (t−2). günde havzaya düşen alansal yağış, akışa geçiş süresi sonunda (t). gün debisini etkiler.
+                </div>
+              </div>
+
+              <!-- Thiessen Alansal Yağış Hesaplayıcı -->
+              <div style="background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:9.8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <strong style="color:#E2E8F0;">☔ Thiessen Havza Yağışı (P<sub>ort</sub>)</strong>
+                  <div style="display:flex; gap:3px;">
+                    <button type="button" class="weather-chip-btn" onclick="applyAnfisPreset('agi1')" style="font-size:8.5px; padding:1px 5px;" title="AGİ-1 Ahmethacı ağırlıkları (%94 İmranlı / %6 Zara)">AGİ-1</button>
+                    <button type="button" class="weather-chip-btn" onclick="applyAnfisPreset('agi2')" style="font-size:8.5px; padding:1px 5px;" title="AGİ-2 Bulakbaşı ağırlıkları (%55 İmranlı / %45 Zara)">AGİ-2</button>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:4px; align-items:center; margin-bottom:3px; color:#94A3B8; font-size:8.5px;">
+                  <span>İstasyon</span>
+                  <span style="text-align:right;">Yağış Pᵢ (mm)</span>
+                  <span style="text-align:right;">Poligon Aᵢ (km²)</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:4px; align-items:center; margin-bottom:4px;">
+                  <span style="color:#CBD5E1; font-size:9.2px;">MGİ-1 İmranlı</span>
+                  <input type="number" id="anfisInputP1" value="12.0" min="0" step="0.5" oninput="calcThiessenAreal()" style="width:100%; background:#090D16; border:1px solid #334155; color:#38BDF8; padding:3px 5px; border-radius:4px; font-size:10px; text-align:right;">
+                  <input type="number" id="anfisInputA1" value="958.4" min="0" step="0.1" oninput="calcThiessenAreal()" style="width:100%; background:#090D16; border:1px solid #334155; color:#CBD5E1; padding:3px 5px; border-radius:4px; font-size:10px; text-align:right;">
+                </div>
+                <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:4px; align-items:center; margin-bottom:6px;">
+                  <span style="color:#CBD5E1; font-size:9.2px;">MGİ-2 Zara</span>
+                  <input type="number" id="anfisInputP2" value="18.0" min="0" step="0.5" oninput="calcThiessenAreal()" style="width:100%; background:#090D16; border:1px solid #334155; color:#38BDF8; padding:3px 5px; border-radius:4px; font-size:10px; text-align:right;">
+                  <input type="number" id="anfisInputA2" value="778.1" min="0" step="0.1" oninput="calcThiessenAreal()" style="width:100%; background:#090D16; border:1px solid #334155; color:#CBD5E1; padding:3px 5px; border-radius:4px; font-size:10px; text-align:right;">
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#1E293B; border:1px solid #475569; border-radius:5px; padding:5px 7px; margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:8.5px; color:#94A3B8;">AĞIRLIKLI YAĞIŞ P<sub>ort</sub>(t−2):</div>
+                    <div id="anfisThiessenWeights" style="font-size:9px; color:#A78BFA;">%55,2 MGİ-1 · %44,8 MGİ-2 (A = 1.736,5 km²)</div>
+                  </div>
+                  <div id="anfisThiessenResult" style="font-size:14px; font-weight:800; color:#38BDF8;">14,69 mm</div>
+                </div>
+
+                <div style="display:flex; gap:5px;">
+                  <button type="button" onclick="syncAnfisLivePrecipToCalc()" class="gis-btn" style="flex:1; justify-content:center; font-size:9px; padding:4px 6px; background:#312E81; border-color:#818CF8; color:#E0E7FF;">
+                    📡 Canlı P(t−2) Aktar
+                  </button>
+                  <button type="button" onclick="focusKizilirmakAnfisStations()" class="gis-btn active" style="flex:1; justify-content:center; font-size:9px; padding:4px 6px; background:#6D28D9; border-color:#A78BFA;">
+                    🎯 Kızılırmak AGİ–MGİ
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel B: Kızılırmak ANFIS Kümeleme & 5 Katman Özeti -->
+            <div id="anfisPaneKizilirmak" style="display:none; font-size:9.8px; line-height:1.45;">
+              <div style="background:#0F172A; border:1px solid #4C1D95; border-radius:6px; padding:6px; margin-bottom:6px;">
+                <div style="color:#DDD6FE; font-weight:700; margin-bottom:3px;">📍 Kızılırmak Memba (2014–2021, %75 Eğitim / %25 Test)</div>
+                <div style="color:#CBD5E1;">• <strong>AGİ-1 (D15A117 Ahmethacı):</strong> 693,42 km² · Girdi: <code>Q₁(t−1)</code>, <code>P₁(t−2)</code> [MGİ-1 %94 + MGİ-2 %6] → <strong>R²=0,9578, RMSE=1,49 m³/s</strong>.</div>
+                <div style="color:#CBD5E1; margin-top:2px;">• <strong>AGİ-2 (E15A039 Bulakbaşı):</strong> 1.642,0 km² · Girdi: <code>Q₁(t−1)</code>, <code>Q₂(t−1)</code>, <code>P₂(t−2)</code> [MGİ-1 %55 + MGİ-2 %45] → <strong>R²=0,9760, RMSE=2,20 m³/s</strong>.</div>
+              </div>
+
+              <div style="border:1px solid #334155; border-radius:5px; overflow:hidden; margin-bottom:6px;">
+                <table style="width:100%; font-size:9px; border-collapse:collapse;">
+                  <thead>
+                    <tr style="background:#1E293B; color:#94A3B8;">
+                      <th style="padding:3px 4px; text-align:left;">Küme (trimf)</th>
+                      <th style="padding:3px 4px; text-align:right;">AGİ-1 Test R² / RMSE</th>
+                      <th style="padding:3px 4px; text-align:right;">AGİ-2 Test R² / RMSE</th>
+                    </tr>
+                  </thead>
+                  <tbody style="background:#0F172A;">
+                    <tr style="background:rgba(16,185,129,0.12); color:#6EE7B7; font-weight:700;">
+                      <td style="padding:3px 4px;">3 Küme (En İyi)</td>
+                      <td style="padding:3px 4px; text-align:right;">0,9578 / 1,49</td>
+                      <td style="padding:3px 4px; text-align:right;">0,9760 / 2,20</td>
+                    </tr>
+                    <tr style="color:#CBD5E1; border-top:1px solid #1E293B;">
+                      <td style="padding:3px 4px;">4 Küme</td>
+                      <td style="padding:3px 4px; text-align:right;">0,9102 / 2,19</td>
+                      <td style="padding:3px 4px; text-align:right;">0,9329 / 3,83</td>
+                    </tr>
+                    <tr style="color:#CBD5E1; border-top:1px solid #1E293B;">
+                      <td style="padding:3px 4px;">5 Küme</td>
+                      <td style="padding:3px 4px; text-align:right;">0,9351 / 1,86</td>
+                      <td style="padding:3px 4px; text-align:right;">0,8959 / 4,79</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="background:#090D16; border:1px solid #334155; border-radius:5px; padding:5px; font-size:9.2px; color:#94A3B8; margin-bottom:6px;">
+                <strong>Takagi-Sugeno 5 Katman:</strong> 1) Üyelik (<code>trimf {a,b,c}</code>) → 2) Kural ateşleme (<code>wᵢ</code>) → 3) Normalleştirme (<code>w̄ᵢ</code>) → 4) Çıkarım (<code>w̄ᵢ·(pᵢx+qᵢy+rᵢ)</code>) → 5) Çıkış <code>Q(t)</code>. 3 küme üzeri aşırı uyum nedeniyle test performansını düşürür.
+              </div>
+              <button type="button" onclick="focusKizilirmakAnfisStations()" class="gis-btn active" style="width:100%; justify-content:center; font-size:9.5px; padding:4px 8px; background:#6D28D9; border-color:#A78BFA;">
+                🎯 Kızılırmak Memba (AGİ-1/2 & MGİ-1/2) Konumuna Git & Veri Çek
+              </button>
+            </div>
+          </div>
+
           <!-- Radar Katmanları Hızlı Butonları -->
           <div class="panel-section" style="border-color: #334155;">
             <div class="panel-section-title">🛰️ Haritada Canlı Radar Aç/Kapat</div>
@@ -4284,6 +4417,7 @@
       ];
       allGroups.forEach(g => { if (g && map.hasLayer(g)) map.removeLayer(g); });
       if (usbsVectorBasinsLayer && map.hasLayer(usbsVectorBasinsLayer)) map.removeLayer(usbsVectorBasinsLayer);
+      if (typeof _anfisStudyLayer !== 'undefined' && _anfisStudyLayer && map.hasLayer(_anfisStudyLayer)) map.removeLayer(_anfisStudyLayer);
       
       document.querySelectorAll('#tabLayers input[type="checkbox"]').forEach(c => c.checked = false);
       document.querySelectorAll('#tabWeather input[type="checkbox"]').forEach(c => c.checked = false);
@@ -4855,7 +4989,7 @@
         { name: 'Çakıt & Körkün Suyu (Seyhan Kolu)', basin: 'Seyhan Havzası', keywords: ['çakıt', 'pozantı'], coords: cakitCoords },
 
         // Türkiye Ulusal Ana Akarsu Ağı (Haritada Serbest Tıklamalar İçin)
-        { name: 'Kızılırmak Nehri', basin: 'Kızılırmak Havzası', keywords: ['kızılırmak', 'sivas', 'kayseri', 'nevşehir', 'kırıkkale', 'bafra'], coords: [[39.80, 37.90], [39.72, 36.95], [39.15, 35.30], [38.90, 34.00], [39.50, 33.45], [40.30, 33.90], [40.95, 34.80], [41.25, 35.45], [41.72, 35.95]] },
+        { name: 'Kızılırmak Nehri', basin: 'Kızılırmak Havzası', keywords: ['kızılırmak', 'sivas', 'kayseri', 'nevşehir', 'kırıkkale', 'bafra', 'ahmethacı', 'bulakbaşı', 'zara', 'imranlı'], coords: [[39.80, 37.90], [39.72, 36.95], [39.15, 35.30], [38.90, 34.00], [39.50, 33.45], [40.30, 33.90], [40.95, 34.80], [41.25, 35.45], [41.72, 35.95]] },
         { name: 'Yeşilırmak Nehri', basin: 'Yeşilırmak Havzası', keywords: ['yeşilırmak', 'tokat', 'amasya', 'samsun', 'çarşamba'], coords: [[40.15, 37.45], [40.32, 36.55], [40.65, 35.85], [40.80, 36.20], [41.20, 36.70], [41.38, 36.65]] },
         { name: 'Kelkit Çayı (Yeşilırmak Kolu)', basin: 'Yeşilırmak Havzası', keywords: ['kelkit', 'niksar', 'erbaa'], coords: [[40.12, 39.45], [40.25, 38.40], [40.58, 37.35], [40.77, 36.45]] },
         { name: 'Sakarya Nehri', basin: 'Sakarya Havzası', keywords: ['sakarya', 'adapazarı', 'karasu', 'polatlı'], coords: [[39.35, 31.15], [39.65, 31.45], [40.08, 31.20], [40.05, 30.35], [40.50, 30.30], [40.80, 30.42], [41.12, 30.65]] },
@@ -5141,11 +5275,170 @@
           `;
         }).join('');
 
+        updateAnfisLiveContext(lat, lon, locationHint, currentQ, times[0]);
+
       } catch (err) {
         console.error('Open-Meteo Flood Hatası:', err);
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:6px; color:#EF4444;">Debi modeli sorgulanamadı.</td></tr>`;
       }
     }
+
+    /* -------------------------------------------------------------
+       THİESSEN YAĞIŞ-AKIŞ & ANFİS DEBİ TAHMİN BİLGİLENDİRME ARACI
+       (Demir, Korkmaz & Arıman, 2023 - Kızılırmak AGİ/MGİ Örneği)
+       ------------------------------------------------------------- */
+    let _anfisSeq = 0;
+    let _anfisLastLivePT2 = null;
+    let _anfisStudyLayer = null;
+
+    function switchAnfisTab(tabName, btnEl) {
+      const pThiessen = document.getElementById('anfisPaneThiessen');
+      const pKizilirmak = document.getElementById('anfisPaneKizilirmak');
+      if (pThiessen) pThiessen.style.display = tabName === 'thiessen' ? 'block' : 'none';
+      if (pKizilirmak) pKizilirmak.style.display = tabName === 'kizilirmak' ? 'block' : 'none';
+      document.querySelectorAll('#anfisModeTabs .sygm-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    function applyAnfisPreset(presetKey) {
+      const a1El = document.getElementById('anfisInputA1');
+      const a2El = document.getElementById('anfisInputA2');
+      if (!a1El || !a2El) return;
+      if (presetKey === 'agi1') {
+        a1El.value = '577.7';
+        a2El.value = '39.2';
+      } else if (presetKey === 'agi2') {
+        a1El.value = '958.4';
+        a2El.value = '778.1';
+      }
+      calcThiessenAreal();
+    }
+
+    function calcThiessenAreal() {
+      const p1 = Math.max(0, parseFloat(document.getElementById('anfisInputP1')?.value) || 0);
+      const a1 = Math.max(0, parseFloat(document.getElementById('anfisInputA1')?.value) || 0);
+      const p2 = Math.max(0, parseFloat(document.getElementById('anfisInputP2')?.value) || 0);
+      const a2 = Math.max(0, parseFloat(document.getElementById('anfisInputA2')?.value) || 0);
+      const totalA = a1 + a2;
+      const resEl = document.getElementById('anfisThiessenResult');
+      const wEl = document.getElementById('anfisThiessenWeights');
+      if (!resEl || !wEl) return;
+
+      if (totalA <= 0) {
+        resEl.textContent = '0,00 mm';
+        wEl.textContent = 'Geçerli poligon alanı giriniz (A > 0)';
+        return;
+      }
+
+      const pOrt = (p1 * a1 + p2 * a2) / totalA;
+      const w1 = (a1 / totalA) * 100;
+      const w2 = (a2 / totalA) * 100;
+      resEl.textContent = `${pOrt.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mm`;
+      wEl.textContent = `%${w1.toFixed(1).replace('.', ',')} MGİ-1 · %${w2.toFixed(1).replace('.', ',')} MGİ-2 (A = ${totalA.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} km²)`;
+    }
+
+    function syncAnfisLivePrecipToCalc() {
+      if (_anfisLastLivePT2 === null || !Number.isFinite(_anfisLastLivePT2)) return;
+      const p1El = document.getElementById('anfisInputP1');
+      const p2El = document.getElementById('anfisInputP2');
+      if (p1El) p1El.value = _anfisLastLivePT2.toFixed(1);
+      if (p2El) p2El.value = _anfisLastLivePT2.toFixed(1);
+      calcThiessenAreal();
+    }
+
+    function shiftIsoDate(isoDate, deltaDays) {
+      const d = new Date(`${isoDate}T12:00:00Z`);
+      if (Number.isNaN(d.getTime())) return null;
+      d.setUTCDate(d.getUTCDate() + deltaDays);
+      return d.toISOString().slice(0, 10);
+    }
+
+    async function updateAnfisLiveContext(lat, lon, locationHint, currentQ, todayIso) {
+      const seq = ++_anfisSeq;
+      const locEl = document.getElementById('anfisSyncLocation');
+      const pt2El = document.getElementById('anfisLivePT2');
+      const qt1El = document.getElementById('anfisLiveQT1');
+      const qt0El = document.getElementById('anfisLiveQT0');
+      const hintEl = document.getElementById('anfisLagHint');
+      if (!locEl || !qt0El) return;
+
+      locEl.textContent = locationHint || `${lat.toFixed(2)}°K, ${lon.toFixed(2)}°D`;
+      qt0El.textContent = typeof currentQ === 'number' ? `${currentQ.toFixed(1)} m³/s` : '-- m³/s';
+      if (pt2El) pt2El.textContent = '...';
+      if (qt1El) qt1El.textContent = '...';
+
+      const tMinus1 = todayIso ? shiftIsoDate(todayIso, -1) : null;
+      const tMinus2 = todayIso ? shiftIsoDate(todayIso, -2) : null;
+
+      try {
+        const [wxRes, flRes] = await Promise.allSettled([
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&past_days=3&forecast_days=1&timezone=auto`),
+          fetch(`https://flood-api.open-meteo.com/v1/flood?latitude=${lat}&longitude=${lon}&daily=river_discharge&past_days=2&forecast_days=1&timezone=auto`)
+        ]);
+        if (seq !== _anfisSeq) return;
+
+        let pT2 = null;
+        if (wxRes.status === 'fulfilled' && wxRes.value.ok) {
+          const wxData = await wxRes.value.json();
+          const dTimes = wxData?.daily?.time || [];
+          const dPrecip = wxData?.daily?.precipitation_sum || [];
+          const idx = tMinus2 ? dTimes.indexOf(tMinus2) : (dTimes.length >= 3 ? dTimes.length - 3 : -1);
+          if (idx >= 0 && typeof dPrecip[idx] === 'number') pT2 = dPrecip[idx];
+        }
+
+        let qT1 = null;
+        if (flRes.status === 'fulfilled' && flRes.value.ok) {
+          const flData = await flRes.value.json();
+          const fTimes = flData?.daily?.time || [];
+          const fQ = flData?.daily?.river_discharge || [];
+          const idx = tMinus1 ? fTimes.indexOf(tMinus1) : (fTimes.length >= 2 ? fTimes.length - 2 : -1);
+          if (idx >= 0 && typeof fQ[idx] === 'number') qT1 = fQ[idx];
+        }
+
+        _anfisLastLivePT2 = pT2;
+        if (pt2El) pt2El.textContent = pT2 !== null ? `${pT2.toFixed(1)} mm` : '-- mm';
+        if (qt1El) qt1El.textContent = qT1 !== null ? `${qT1.toFixed(1)} m³/s` : '-- m³/s';
+
+        if (hintEl && pT2 !== null && qT1 !== null && typeof currentQ === 'number') {
+          const dQ = currentQ - qT1;
+          const dirTxt = dQ > 0.2 ? `↗ +${dQ.toFixed(1)} m³/s artış` : (dQ < -0.2 ? `↘ ${dQ.toFixed(1)} m³/s azalış` : '→ yatay seyir');
+          hintEl.textContent = `Gözlenen gecikme sinyali: P(t−2)=${pT2.toFixed(1)} mm & Q(t−1)=${qT1.toFixed(1)} m³/s → bugünkü kesitte ${dirTxt}.`;
+        }
+      } catch (_) {
+        if (seq === _anfisSeq) {
+          if (pt2El && pt2El.textContent === '...') pt2El.textContent = '-- mm';
+          if (qt1El && qt1El.textContent === '...') qt1El.textContent = '-- m³/s';
+        }
+      }
+    }
+
+    function focusKizilirmakAnfisStations() {
+      const stations = [
+        { code: 'AGİ-1 (D15A117)', title: 'Kızılırmak - Ahmethacı', lat: 39.9064, lon: 37.8258, color: '#0284C7', info: '693,42 km² · ANFIS 2 giriş-1 çıkış (R²=0,9578, RMSE=1,49 m³/s)' },
+        { code: 'AGİ-2 (E15A039)', title: 'Kızılırmak - Bulakbaşı', lat: 39.8781, lon: 37.5631, color: '#6D28D9', info: '1.642,0 km² · ANFIS 3 giriş-1 çıkış (R²=0,976, RMSE=2,20 m³/s)' },
+        { code: 'MGİ-1 (18470)', title: 'İmranlı Meteoroloji İstasyonu', lat: 39.8758, lon: 38.0983, color: '#10B981', info: 'Thiessen payı: AGİ-1 %94 (577,7 km²) · AGİ-2 %55 (958,4 km²)' },
+        { code: 'MGİ-2 (17716)', title: 'Zara Meteoroloji İstasyonu', lat: 39.8828, lon: 37.7298, color: '#F59E0B', info: 'Thiessen payı: AGİ-1 %6 (39,2 km²) · AGİ-2 %45 (778,1 km²)' }
+      ];
+
+      if (_anfisStudyLayer && map.hasLayer(_anfisStudyLayer)) map.removeLayer(_anfisStudyLayer);
+      _anfisStudyLayer = L.layerGroup();
+      stations.forEach(s => {
+        const ic = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="background:${s.color}; width:13px; height:13px; border:2px solid #fff; border-radius:50%; box-shadow:0 0 6px rgba(0,0,0,0.8); transform:translate(-50%,-50%);"></div>`,
+          iconSize: [14, 14]
+        });
+        L.marker([s.lat, s.lon], { icon: ic }).bindPopup(`
+          <div class="popup-title" style="color:${s.color};">${s.code} · ${s.title}</div>
+          <div style="font-size:10px; color:#CBD5E1; line-height:1.4;">${s.info}</div>
+        `).addTo(_anfisStudyLayer);
+      });
+      _anfisStudyLayer.addTo(map);
+      map.flyTo([39.89, 37.78], 10, { duration: 1.2 });
+      fetchWeatherByCoords(39.8781, 37.5631, 'Kızılırmak - Bulakbaşı (AGİ-2)', true);
+    }
+
+    calcThiessenAreal();
 
     async function fetchForecastData(lat, lon) {
       const container = document.getElementById('weatherForecastList');
