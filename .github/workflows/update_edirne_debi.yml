@@ -5,6 +5,11 @@ on:
     # TSİ (UTC+3) 08:30, 14:30 ve 20:30'da otomatik çek
     - cron: '30 5,11,17 * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update_edirne_debi.yml'
+      - 'scripts/fetch_edirne_debi.mjs'
 
 permissions:
   contents: write
