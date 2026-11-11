@@ -414,48 +414,6 @@
       will-change: transform;
     }
 
-    /* Kartografik Başlık Bloğu (Üst Orta) */
-    .carto-title-block {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--panel-bg);
-      backdrop-filter: blur(8px);
-      border: 2px solid #334155;
-      border-radius: 8px;
-      padding: 7px 18px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      pointer-events: auto;
-      z-index: 900;
-    }
-
-    .carto-title-block h2 {
-      font-size: 13.5px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      color: #F8FAFC;
-      text-transform: uppercase;
-      margin-bottom: 1px;
-    }
-
-    .carto-title-block p.sub {
-      font-size: 10px;
-      font-weight: 600;
-      color: #60A5FA;
-      margin-bottom: 2px;
-    }
-
-    .carto-title-block .meta-badges {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      font-size: 8.5px;
-      color: #94A3B8;
-      font-family: 'Consolas', monospace;
-    }
-
     /* Sağ Üst Uyarı Notu */
     .carto-disclaimer-badge {
       position: absolute;
@@ -830,8 +788,6 @@
       .gis-sidebar { width: 300px; }
       .sidebar-toggle-btn { left: 300px; }
       .carto-disclaimer-badge { display: none; }
-      .carto-title-block { padding: 5px 12px; }
-      .carto-title-block h2 { font-size: 12px; }
     }
   </style>
 </head>
@@ -2221,19 +2177,6 @@
 
       <!-- KARTOGRAFİK KENAR ELEMANLARI (OVERLAY UI) -->
       
-      <!-- Başlık Bloğu (Üst Orta) -->
-      <div class="carto-title-block">
-        <h2>TÜRKİYE'NİN SINIRAŞAN SULARI</h2>
-        <p class="sub" id="cartoSubTitle">Sınıraşan ve Ulusal Nehir Havzaları İnteraktif Coğrafi Bilgi Sistemi</p>
-        <div class="meta-badges">
-          <span>Ölçek: 1:1.500.000 / 1:500.000</span>
-          <span>•</span>
-          <span>Projeksiyon: UTM Zone 37N/38N</span>
-          <span>•</span>
-          <span>WGS 84</span>
-        </div>
-      </div>
-
       <!-- Sağ Üst Uyarı Notu (Kapatılabilir) -->
       <div class="carto-disclaimer-badge" id="cartoDisclaimerBadge">
         <button class="disclaimer-close-btn" onclick="document.getElementById('cartoDisclaimerBadge').style.display='none'" title="Notu Gizle">✕</button>
@@ -4222,7 +4165,6 @@
     function flyToExtent(key) {
       if (EXTENTS[key]) {
         map.flyTo(EXTENTS[key].center, EXTENTS[key].zoom, { duration: 1.2 });
-        document.getElementById('cartoSubTitle').textContent = EXTENTS[key].title;
       }
     }
 
@@ -5236,7 +5178,6 @@
             flyToExtent(b.extent);
           } else if (b.lat && b.lon) {
             map.flyTo([b.lat, b.lon], 8, { duration: 1.2 });
-            document.getElementById('cartoSubTitle').textContent = `${b.no}. ${b.name} (Ulusal Havza)`;
           }
         });
         tbody.appendChild(tr);
