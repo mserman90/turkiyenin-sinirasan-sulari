@@ -6,16 +6,22 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import dns from 'node:dns/promises';
+import net from 'node:net';
+import https from 'node:https';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-let playwrightMod;
-try {
-  playwrightMod = require('playwright');
-} catch {
-  playwrightMod = require('/tmp/pw/node_modules/playwright');
+function loadChromium() {
+  for (const modPath of ['playwright', '/tmp/pw/node_modules/playwright']) {
+    try {
+      return require(modPath).chromium;
+    } catch {
+      // try next path
+    }
+  }
+  return null;
 }
-const { chromium } = playwrightMod;
 
 const SOURCE_URL = 'https://edirnenehir.dsi.gov.tr/';
 const OUT_FILE = path.resolve(process.cwd(), 'data', 'edirne_debi.json');
@@ -148,43 +154,226 @@ async function readExistingJson() {
   }
 }
 
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+function decodeHtmlEntities(str) {
+  return String(str || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)));
+}
+
+function stripTags(html) {
+  return decodeHtmlEntities(String(html || '').replace(/<[^>]+>/g, ''))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parsePivotFromHtml(html) {
+  const h5Match = html.match(/<h5[^>]*>([\s\S]*?)<\/h5>/i);
+  const headingText = h5Match ? stripTags(h5Match[1]) : '';
+  const dateMatch = headingText.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  const displayDate = dateMatch ? `${dateMatch[1]}.${dateMatch[2]}.${dateMatch[3]}` : null;
+  const isoDate = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : null;
+
+  const pivotStart = html.indexOf('id="ASPxPivotGrid2"');
+  if (pivotStart < 0) {
+    return { headingText, displayDate, isoDate, rows: [] };
+  }
+
+  const slice = html.slice(pivotStart);
+  const rows = [];
+  let currentRiver = '';
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let trMatch;
+
+  while ((trMatch = trRegex.exec(slice)) !== null) {
+    const trHtml = trMatch[1];
+    const rowFieldCells = Array.from(
+      trHtml.matchAll(/<td[^>]*class="[^"]*dxpgRowFieldValue_Youthful[^"]*"[^>]*>([\s\S]*?)<\/td>/gi),
+      (m) => stripTags(m[1])
+    );
+    const dataCells = Array.from(
+      trHtml.matchAll(/<td[^>]*class="[^"]*dxpgCell_Youthful[^"]*"[^>]*>([\s\S]*?)<\/td>/gi),
+      (m) => stripTags(m[1])
+    );
+
+    if (rowFieldCells.length === 0 || dataCells.length === 0) continue;
+
+    let river = currentRiver;
+    let station = '';
+    let hour = '';
+
+    if (rowFieldCells.length >= 3) {
+      [river, station, hour] = rowFieldCells;
+      currentRiver = river;
+    } else if (rowFieldCells.length === 2) {
+      [station, hour] = rowFieldCells;
+    } else {
+      continue;
+    }
+
+    if (/toplam|total/i.test(station) || /toplam|total/i.test(river)) continue;
+
+    const rawVal = dataCells[dataCells.length - 1];
+    const parsedVal = Number.parseFloat(rawVal.replace(/\s+/g, '').replace(',', '.'));
+    rows.push({
+      river: river.trim(),
+      name: station.trim(),
+      time: hour.trim() || '08:00',
+      raw_value: rawVal,
+      discharge_m3s: Number.isFinite(parsedVal) ? parsedVal : null
+    });
+  }
+
+  return { headingText, displayDate, isoDate, rows };
+}
+
+async function probeTcp443(host, timeoutMs = 6000) {
+  const started = Date.now();
+  return new Promise((resolve) => {
+    const sock = net.connect({ host, port: 443 });
+    let done = false;
+    const finish = (status) => {
+      if (done) return;
+      done = true;
+      sock.destroy();
+      resolve({ status, ms: Date.now() - started });
+    };
+    sock.setTimeout(timeoutMs);
+    sock.on('connect', () => finish('ok'));
+    sock.on('timeout', () => finish(`timeout_${timeoutMs}ms`));
+    sock.on('error', (err) => finish(`err:${err.code || err.message}`));
+  });
+}
+
+async function fetchHttpsHtml(urlStr, timeoutMs = 12000) {
+  return new Promise((resolve) => {
+    const req = https.get(
+      urlStr,
+      {
+        rejectUnauthorized: false,
+        timeout: timeoutMs,
+        headers: {
+          'User-Agent': DESKTOP_UA,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8'
+        }
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const html = Buffer.concat(chunks).toString('utf8');
+          resolve({ status: res.statusCode || 0, html, error: null });
+        });
+      }
+    );
+    req.on('timeout', () => {
+      req.destroy(new Error(`https_timeout_${timeoutMs}ms`));
+    });
+    req.on('error', (err) => {
+      resolve({ status: 0, html: '', error: err.code || err.message });
+    });
+  });
+}
+
+async function probeAndFetchHtml(urlStr) {
+  const hostname = new URL(urlStr).hostname;
+  let ip = null;
+  let dnsErr = null;
+  try {
+    const res = await dns.lookup(hostname);
+    ip = res.address;
+  } catch (err) {
+    dnsErr = err.code || err.message;
+  }
+
+  const tcp = ip ? await probeTcp443(ip, 6000) : { status: `dns_failed:${dnsErr}`, ms: 0 };
+  const httpRes = tcp.status === 'ok'
+    ? await fetchHttpsHtml(urlStr, 12000)
+    : { status: 0, html: '', error: `skipped_due_to_${tcp.status}` };
+
+  return {
+    ip,
+    dnsErr,
+    tcpStatus: tcp.status,
+    tcpMs: tcp.ms,
+    httpStatus: httpRes.status,
+    httpError: httpRes.error,
+    html: httpRes.html
+  };
+}
+
 async function main() {
   const existing = await readExistingJson();
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-dev-shm-usage']
-  });
+  const diag = await probeAndFetchHtml(SOURCE_URL);
+  const ssrLatest = diag.html ? parsePivotFromHtml(diag.html) : null;
+  const ssrOk = Boolean(ssrLatest?.rows?.length && ssrLatest?.isoDate);
+
+  console.log(
+    `::notice::PROBE ip=${diag.ip || 'none'} tcp=${diag.tcpStatus}(${diag.tcpMs}ms) https=${diag.httpStatus || diag.httpError} bytes=${diag.html?.length || 0} ssr_rows=${ssrLatest?.rows?.length || 0}`
+  );
+
+  let latest = ssrOk ? ssrLatest : null;
+  let pwError = null;
+  const chromium = loadChromium();
+
+  const browser = chromium
+    ? await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-http2', '--disable-blink-features=AutomationControlled']
+      })
+    : null;
 
   try {
-    const context = await browser.newContext({
-      ignoreHTTPSErrors: true,
-      locale: 'tr-TR',
-      viewport: { width: 1280, height: 900 }
-    });
-    const page = await context.newPage();
-
+    let page = null;
     let loaded = false;
-    let lastErr = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        await page.goto(SOURCE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        await page.waitForSelector('#ASPxPivotGrid2', { timeout: 30000 });
-        loaded = true;
-        break;
-      } catch (err) {
-        lastErr = err;
-        console.warn(`Attempt ${attempt} failed: ${err.message}`);
-        await page.waitForTimeout(2000 * attempt);
+
+    if (browser) {
+      const context = await browser.newContext({
+        ignoreHTTPSErrors: true,
+        userAgent: DESKTOP_UA,
+        locale: 'tr-TR',
+        viewport: { width: 1280, height: 900 }
+      });
+      page = await context.newPage();
+
+      const maxAttempts = diag.tcpStatus === 'ok' ? 2 : 1;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          await page.goto(SOURCE_URL, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.waitForSelector('#ASPxPivotGrid2', { timeout: 10000 });
+          loaded = true;
+          break;
+        } catch (err) {
+          pwError = err.message.split('\n')[0];
+          console.warn(`Attempt ${attempt} failed: ${pwError}`);
+          await page.waitForTimeout(1500);
+        }
       }
+    } else {
+      pwError = 'playwright_not_installed';
     }
 
-    if (!loaded) {
-      throw new Error(`Could not load ${SOURCE_URL}: ${lastErr?.message || 'unknown error'}`);
+    if (loaded && page) {
+      const domLatest = await extractCurrentPivot(page);
+      if (domLatest.rows.length > 0 && domLatest.isoDate) {
+        latest = domLatest;
+      }
+    } else if (ssrOk) {
+      console.log(`::warning::Playwright navigation failed (${pwError}); proceeding with direct HTTPS SSR HTML (${latest.rows.length} rows).`);
     }
 
-    const latest = await extractCurrentPivot(page);
-    if (!latest.rows.length || !latest.isoDate) {
-      throw new Error(`Pivot table yielded no rows (heading="${latest.headingText}")`);
+    if (!latest || !latest.rows.length || !latest.isoDate) {
+      const reason = `Fetch failed: ip=${diag.ip || diag.dnsErr} tcp=${diag.tcpStatus} https=${diag.httpStatus || diag.httpError} ssr_rows=${ssrLatest?.rows?.length || 0} pw=${pwError || 'n/a'}`;
+      console.log(`::error::${reason}`);
+      throw new Error(reason);
     }
 
     const nowUtc = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -216,8 +405,8 @@ async function main() {
       stations: toStationDict(latestStations)
     });
 
-    // Geçmiş gün sayısı yetersizse eksik son günleri nazikçe sorgula
-    if (historyMap.size < BACKFILL_TARGET_DAYS) {
+    // Geçmiş gün sayısı yetersizse eksik son günleri nazikçe sorgula (Playwright sayfası yüklendiyse)
+    if (loaded && page && historyMap.size < BACKFILL_TARGET_DAYS) {
       for (let d = 1; d < BACKFILL_TARGET_DAYS; d++) {
         const targetIso = shiftIsoDate(latest.isoDate, -d);
         if (historyMap.has(targetIso)) continue;
@@ -232,10 +421,10 @@ async function main() {
           await page.fill('#ASPxDateEdit1_I', targetDisplay);
           await page.locator('#ASPxDateEdit1_I').press('Tab');
           await Promise.all([
-            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null),
+            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => null),
             page.click('#Button2')
           ]);
-          await page.waitForSelector('#ASPxPivotGrid2', { timeout: 20000 });
+          await page.waitForSelector('#ASPxPivotGrid2', { timeout: 15000 });
           const afterHeading = await page.locator('#about h5').textContent().catch(() => '');
           if (afterHeading && afterHeading !== prevHeading) {
             const snap = await extractCurrentPivot(page);
@@ -250,7 +439,7 @@ async function main() {
               console.log(`Backfilled ${snap.isoDate}: ${enriched.length} stations`);
             }
           }
-          await page.waitForTimeout(1200);
+          await page.waitForTimeout(1000);
         } catch (bfErr) {
           console.warn(`Backfill skipped for ${targetIso}: ${bfErr.message}`);
         }
@@ -274,9 +463,9 @@ async function main() {
 
     await fs.mkdir(path.dirname(OUT_FILE), { recursive: true });
     await fs.writeFile(OUT_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-    console.log(`Updated ${OUT_FILE}: date=${payload.date}, stations=${latestStations.length}, history=${sortedHistory.length}`);
+    console.log(`::notice::Updated data/edirne_debi.json: date=${payload.date}, stations=${latestStations.length}, history=${sortedHistory.length}`);
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }
 
