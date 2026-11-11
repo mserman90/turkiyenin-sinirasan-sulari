@@ -1,0 +1,10 @@
+# H-SAF uydu yağış/kar havza indirici ve ANFIS CSV dışa aktarıcı bağımlılıkları
+# mserman90/data_access (https://github.com/mserman90/data_access) ile uyumludur.
+# Not: --sample-test veya önceden hazırlanmış CSV/GeoJSON işlemleri ek paket olmadan da çalışır;
+# FTP (.nc.gz/.nc) okuma ve NetCDF4 havza kesimi için numpy, netCDF4 ve pandas önerilir.
+numpy>=1.24.0
+pandas>=1.4.1
+netCDF4>=1.6.4
+xarray>=2022.3.0
+# Opsiyonel ESRI .shp kesimi için:
+# geopandas>=0.13.2

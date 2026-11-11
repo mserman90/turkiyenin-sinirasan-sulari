@@ -1,0 +1,38 @@
+name: H-SAF Python Boru Hattını Doğrula
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/hsaf_basin_export.py'
+      - 'scripts/test_hsaf_basin_export.py'
+      - 'scripts/requirements-hsaf.txt'
+      - '.github/workflows/verify_hsaf_python.yml'
+
+jobs:
+  test-hsaf-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: H-SAF bağımlılıklarını kur
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements-hsaf.txt
+
+      - name: Sözdizimi ve birim testlerini çalıştır
+        run: |
+          python -m py_compile scripts/hsaf_basin_export.py scripts/test_hsaf_basin_export.py
+          python -m unittest -v scripts/test_hsaf_basin_export.py
+
+      - name: Örnek CLI boru hattını çalıştır
+        run: |
+          python scripts/hsaf_basin_export.py --sample-test --basin firat-dicle --product h64 --out-dir /tmp/hsaf_out
+          head -n 6 /tmp/hsaf_out/hsaf_h64_firat-dicle_sample_anfis.csv
+          head -n 5 /tmp/hsaf_out/hsaf_h64_firat-dicle_sample_grid.csv

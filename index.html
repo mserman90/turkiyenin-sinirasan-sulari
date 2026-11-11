@@ -1060,6 +1060,13 @@
                 Edirne Canlı Debi (DSİ 11. Bölge Meriç-Tunca-Ergene)
               </label>
             </div>
+            <div class="layer-item">
+              <label class="layer-label">
+                <input type="checkbox" id="layerHsafGrid">
+                <span class="layer-swatch" style="background: #06B6D4;"></span>
+                H-SAF Uydu Yağışı / Kar Grid (data_access CSV)
+              </label>
+            </div>
 
             <div class="layer-item">
               <label class="layer-label">
@@ -1575,6 +1582,47 @@
             <div id="dsiAgiStatusMsg" style="display:none; font-size:9.2px; padding:4px 6px; border-radius:4px; margin-bottom:6px;"></div>
 
             <div id="dsiAgiResultCard" style="display:none; background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:9.8px; line-height:1.45;">
+              <!-- Dinamik JS doldurur -->
+            </div>
+          </div>
+
+          <!-- H-SAF (mserman90/data_access) Uydu Yağış / Kar CSV & ANFIS (t−2) Modülü -->
+          <div class="panel-section" id="hsafParserSection" style="border-color: #06B6D4; background: rgba(6, 182, 212, 0.05);">
+            <div class="panel-section-title" style="color: #67E8F9;">
+              <span>🛰️ H-SAF Uydu Yağışı &amp; Kar (data_access)</span>
+              <a href="https://github.com/mserman90/data_access" target="_blank" rel="noopener" style="font-size: 8.5px; color:#ECFEFF; background:#0E7490; padding:1px 5px; border-radius:4px; text-decoration:none; white-space:nowrap;">data_access ↗</a>
+            </div>
+            <p style="font-size:10px; color:#CBD5E1; line-height:1.45; margin-bottom:6px;">
+              <strong>mserman90/data_access</strong> (H64/H60/H26 <code>output.csv</code>) veya <code>hsaf_basin_export.py</code> CSV dosyasını haritada gösterir, günlük havza ortalamasından <strong>P(t−2)</strong> gecikmesini ANFIS'e aktarır.
+            </p>
+
+            <input type="file" id="hsafFileInput" accept=".csv,.txt" style="display:none;" onchange="handleHsafFile(event)">
+            <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+              <button type="button" onclick="document.getElementById('hsafFileInput').click()" class="gis-btn" style="flex:1.1; justify-content:center; font-size:9px; padding:4px 5px; background:#164E63; border-color:#06B6D4; color:#ECFEFF; min-width:0;">
+                📂 H-SAF CSV Yükle
+              </button>
+              <button type="button" onclick="loadHsafSample()" class="gis-btn" style="flex:0.9; justify-content:center; font-size:9px; padding:4px 5px; background:#1E293B; border-color:#475569; color:#E2E8F0; min-width:0;" title="Meriç-Ergene H64/H60 çok günlük örnek grid CSV yükle">
+                🧪 H64 Şablon
+              </button>
+              <select id="hsafBasinFilterSelect" onchange="reapplyHsafBasinFilter()" style="flex:0.95; min-width:0; max-width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:3.5px 4px; border-radius:4px; font-size:9px;" title="Yüklenen gridi seçili sınıraşan havza sınırı ile kırp">
+                <option value="all">Tüm Alan</option>
+                <option value="TR01">Meriç-Ergene</option>
+                <option value="TR21">Fırat-Dicle</option>
+                <option value="TR19">Asi</option>
+                <option value="TR23">Çoruh</option>
+                <option value="TR24">Aras</option>
+              </select>
+            </div>
+
+            <textarea id="hsafRawInput" rows="2" oninput="_hsafMemoryCsv = null;" placeholder="x,time,lat,lon,Rainfall veya time,latitude,longitude,acc_rr ya da ANFIS CSV yapıştırın..." style="width:100%; background:#090D16; border:1px solid #334155; color:#E2E8F0; padding:5px 6px; border-radius:5px; font-size:9.3px; font-family:Consolas,monospace; resize:vertical; margin-bottom:5px;"></textarea>
+
+            <button type="button" onclick="parseAndPlotHsafCsv()" class="gis-btn active" style="width:100%; justify-content:center; font-size:9.5px; padding:5px 8px; background:#0891B2; border-color:#22D3EE; margin-bottom:6px;">
+              🛰️ Çözümle, Grid Çiz &amp; P(t−2) Hesapla
+            </button>
+
+            <div id="hsafStatusMsg" style="display:none; font-size:9.2px; padding:4px 6px; border-radius:4px; margin-bottom:6px;"></div>
+
+            <div id="hsafResultCard" style="display:none; background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:9.6px; line-height:1.45;">
               <!-- Dinamik JS doldurur -->
             </div>
           </div>
@@ -2912,6 +2960,7 @@
     const grpCoruh = L.layerGroup();
     const grpMericAsi = L.layerGroup();
     const _edirneStationsLayer = L.layerGroup();
+    const _hsafGridLayer = L.layerGroup();
     const grpDoguKaradeniz = L.layerGroup();
     const grpCeyhan = L.layerGroup();
     const grpSeyhan = L.layerGroup();
@@ -4570,6 +4619,7 @@
         { id: 'layerCoruh', grp: grpCoruh },
         { id: 'layerMericAsi', grp: grpMericAsi },
         { id: 'layerEdirneStations', grp: _edirneStationsLayer },
+        { id: 'layerHsafGrid', grp: _hsafGridLayer },
         { id: 'layerDoguKaradeniz', grp: grpDoguKaradeniz },
         { id: 'layerCeyhan', grp: grpCeyhan },
         { id: 'layerSeyhan', grp: grpSeyhan },
@@ -4582,6 +4632,7 @@
         if (el) el.checked = map.hasLayer(b.grp);
       });
       if (typeof updateEdirneMapBtnState === 'function') updateEdirneMapBtnState();
+      if (typeof updateHsafMapBtnState === 'function') updateHsafMapBtnState();
     }
 
     function clearAllLayers() {
@@ -4589,7 +4640,7 @@
       const allGroups = [
         grpTigris, grpEuphrates, grpIraqDams, grpIraqCrossings,
         grpArasKura, grpArmeniaRivers, grpCaucasusDams,
-        grpCoruh, grpMericAsi, _edirneStationsLayer, grpDoguKaradeniz, grpCeyhan, grpSeyhan,
+        grpCoruh, grpMericAsi, _edirneStationsLayer, _hsafGridLayer, grpDoguKaradeniz, grpCeyhan, grpSeyhan,
         grpAgi, grpSettlements, grpPeaks,
         owmPrecipitation, owmClouds, owmTemp, owmWind, owmPressure,
         usbsBasinsLayer, usbsRiversLayer, usbsFloodQ100Layer, usbsFloodHazardLayer, usbsFloodDepthLayer, usbsTypMeasuresLayer
@@ -4605,6 +4656,7 @@
       const sysStatus = document.getElementById('hudSystemStatus');
       if (sysStatus) sysStatus.textContent = "Katmanlar Kapalı";
       if (typeof updateEdirneMapBtnState === 'function') updateEdirneMapBtnState();
+      if (typeof updateHsafMapBtnState === 'function') updateHsafMapBtnState();
     }
 
     function setBasinFilter(type) {
@@ -4853,6 +4905,7 @@
       { id: 'layerCoruh', grp: grpCoruh },
       { id: 'layerMericAsi', grp: grpMericAsi },
       { id: 'layerEdirneStations', grp: _edirneStationsLayer },
+      { id: 'layerHsafGrid', grp: _hsafGridLayer },
       { id: 'layerDoguKaradeniz', grp: grpDoguKaradeniz },
       { id: 'layerCeyhan', grp: grpCeyhan },
       { id: 'layerSeyhan', grp: grpSeyhan },
@@ -4882,6 +4935,9 @@
           else map.removeLayer(b.grp);
           if (b.id === 'layerEdirneStations' && typeof updateEdirneMapBtnState === 'function') {
             updateEdirneMapBtnState();
+          }
+          if (b.id === 'layerHsafGrid' && typeof updateHsafMapBtnState === 'function') {
+            updateHsafMapBtnState();
           }
         });
       }
@@ -6479,6 +6535,593 @@
       } catch (err) {
         alert('Hava durumu sorgulanırken bağlantı hatası oluştu.');
       }
+    }
+
+    /* -------------------------------------------------------------
+       H-SAF (mserman90/data_access) UYDU YAĞIŞ / KAR CSV & ANFIS (t−2) MODÜLÜ
+       ------------------------------------------------------------- */
+    const HSAF_BASIN_META = {
+      all: { code: 'TR_ALL', name: 'Tüm Alan / Sınıraşan Havzalar', center: [39.1, 35.4], bbox: null },
+      TR01: { code: 'TR01', name: 'Meriç-Ergene', center: [41.35, 27.15], bbox: [26.00, 40.60, 28.25, 42.15] },
+      TR19: { code: 'TR19', name: 'Asi', center: [36.50, 36.35], bbox: [35.75, 35.78, 37.28, 37.26] },
+      TR21: { code: 'TR21', name: 'Fırat-Dicle', center: [38.65, 40.30], bbox: [36.75, 36.60, 44.88, 40.40] },
+      TR23: { code: 'TR23', name: 'Çoruh', center: [40.85, 41.35], bbox: [39.62, 39.88, 42.68, 41.56] },
+      TR24: { code: 'TR24', name: 'Aras', center: [40.20, 42.75], bbox: [41.12, 39.28, 44.86, 41.64] }
+    };
+
+    let _hsafMemoryCsv = null;
+    let _hsafParsedRaw = null;
+    let _hsafFilteredState = null;
+    let _hsafGeoJsonCache = null;
+
+    function setHsafStatus(msg, isErr = false) {
+      const el = document.getElementById('hsafStatusMsg');
+      if (!el) return;
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        return;
+      }
+      el.style.display = 'block';
+      el.textContent = msg;
+      el.style.background = isErr ? 'rgba(185, 28, 28, 0.25)' : 'rgba(14, 116, 144, 0.28)';
+      el.style.border = isErr ? '1px solid #EF4444' : '1px solid #06B6D4';
+      el.style.color = isErr ? '#FCA5A5' : '#A5F3FC';
+    }
+
+    function updateHsafMapBtnState() {
+      const btn = document.getElementById('btnToggleHsafGrid');
+      const chk = document.getElementById('layerHsafGrid');
+      const isOn = map.hasLayer(_hsafGridLayer);
+      if (chk) chk.checked = isOn;
+      if (btn) {
+        btn.textContent = isOn ? '👁️ Gridi Gizle' : '🗺️ Gridi Haritada Göster';
+        btn.style.background = isOn ? '#0E7490' : '#164E63';
+      }
+    }
+
+    function toggleHsafGridLayer(forceState = null) {
+      const turnOn = forceState !== null ? Boolean(forceState) : !map.hasLayer(_hsafGridLayer);
+      if (turnOn) {
+        if (!map.hasLayer(_hsafGridLayer)) map.addLayer(_hsafGridLayer);
+      } else if (map.hasLayer(_hsafGridLayer)) {
+        map.removeLayer(_hsafGridLayer);
+      }
+      updateHsafMapBtnState();
+    }
+
+    function splitHsafCsvRow(line, sep) {
+      if (!line.includes('"')) return line.split(sep);
+      const out = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === sep && !inQuotes) {
+          out.push(cur);
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function normalizeHsafDate(raw) {
+      const s = String(raw ?? '').trim().replace(/^["']|["']$/g, '');
+      const mIso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (mIso) return mIso[1];
+      const mYmd = s.match(/^(\d{4})(\d{2})(\d{2})/);
+      if (mYmd) return `${mYmd[1]}-${mYmd[2]}-${mYmd[3]}`;
+      return null;
+    }
+
+    function hsafPointInRing(lon, lat, ring) {
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        if (((yi > lat) !== (yj > lat)) && (lon < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-15) + xi)) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function hsafPointInFeature(lon, lat, feat) {
+      const geom = feat?.geometry;
+      if (!geom) return false;
+      if (geom.type === 'Polygon') {
+        const rings = geom.coordinates || [];
+        if (!rings.length || !hsafPointInRing(lon, lat, rings[0])) return false;
+        for (let r = 1; r < rings.length; r++) {
+          if (hsafPointInRing(lon, lat, rings[r])) return false;
+        }
+        return true;
+      }
+      if (geom.type === 'MultiPolygon') {
+        for (const poly of (geom.coordinates || [])) {
+          if (poly.length && hsafPointInRing(lon, lat, poly[0])) {
+            let inHole = false;
+            for (let r = 1; r < poly.length; r++) {
+              if (hsafPointInRing(lon, lat, poly[r])) { inHole = true; break; }
+            }
+            if (!inHole) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    async function ensureHsafBasinPolygons() {
+      if (_hsafGeoJsonCache) return _hsafGeoJsonCache;
+      if (window.location.protocol === 'file:') return null;
+      try {
+        const res = await fetch('turkiye_sinirasan_havzalar_web.geojson');
+        if (!res.ok) return null;
+        const data = await res.json();
+        const byCode = {};
+        for (const f of (data?.features || [])) {
+          const code = String(f?.properties?.KODU || '').trim();
+          if (code) byCode[code] = f;
+        }
+        _hsafGeoJsonCache = byCode;
+        return byCode;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function handleHsafFile(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const txt = String(e.target?.result || '');
+        _hsafMemoryCsv = txt;
+        const txtEl = document.getElementById('hsafRawInput');
+        if (txtEl) {
+          if (txt.length > 120000) {
+            const previewLines = txt.replace(/\r/g, '').split('\n').slice(0, 4).join('\n');
+            txtEl.value = `/* Yüklendi: ${file.name} (${(txt.length / 1024).toFixed(0)} KB) — bellekten çözümleniyor */\n${previewLines}`;
+          } else {
+            txtEl.value = txt;
+          }
+        }
+        parseAndPlotHsafCsv();
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function loadHsafSample() {
+      const sampleCsv = [
+        'x,time,lat,lon,Rainfall',
+        '0,2026-11-06,41.22,26.85,4.2',
+        '1,2026-11-06,41.35,27.15,5.8',
+        '2,2026-11-06,41.48,27.45,3.5',
+        '3,2026-11-06,41.62,26.78,4.9',
+        '4,2026-11-07,41.22,26.85,11.4',
+        '5,2026-11-07,41.35,27.15,14.2',
+        '6,2026-11-07,41.48,27.45,10.6',
+        '7,2026-11-07,41.62,26.78,12.8',
+        '8,2026-11-08,41.22,26.85,22.4',
+        '9,2026-11-08,41.35,27.15,28.6',
+        '10,2026-11-08,41.48,27.45,19.8',
+        '11,2026-11-08,41.62,26.78,25.2',
+        '12,2026-11-09,41.22,26.85,9.5',
+        '13,2026-11-09,41.35,27.15,11.2',
+        '14,2026-11-09,41.48,27.45,7.8',
+        '15,2026-11-09,41.62,26.78,10.3',
+        '16,2026-11-10,41.22,26.85,2.4',
+        '17,2026-11-10,41.35,27.15,3.6',
+        '18,2026-11-10,41.48,27.45,1.8',
+        '19,2026-11-10,41.62,26.78,2.9'
+      ].join('\n');
+      _hsafMemoryCsv = null;
+      const txtEl = document.getElementById('hsafRawInput');
+      const selEl = document.getElementById('hsafBasinFilterSelect');
+      if (txtEl) txtEl.value = sampleCsv;
+      if (selEl) selEl.value = 'TR01';
+      parseAndPlotHsafCsv();
+    }
+
+    function parseHsafCsvRecords(rawText) {
+      const lines = rawText.replace(/\r/g, '').split('\n');
+      let headerIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i].trim();
+        if (l && !l.startsWith('/*')) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1 || headerIdx >= lines.length - 1) return null;
+
+      const hdrLine = lines[headerIdx];
+      const sep = hdrLine.includes(';') ? ';' : (hdrLine.includes('\t') ? '\t' : ',');
+      const headers = splitHsafCsvRow(hdrLine, sep).map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''));
+      const findCol = (names) => headers.findIndex(h => names.includes(h));
+
+      // Şema 1: hsaf_basin_export.py ANFIS Havza Günlük CSV (date,basin_code,basin_name,...,mean_precip_mm,...)
+      const idxDateAnfis = findCol(['date', 'tarih']);
+      const idxMeanMm = findCol(['mean_precip_mm', 'p_ort', 'mean_mm']);
+      if (idxDateAnfis >= 0 && idxMeanMm >= 0) {
+        const idxBasinCode = findCol(['basin_code', 'kodu']);
+        const idxBasinName = findCol(['basin_name', 'havza']);
+        const idxMaxMm = findCol(['max_precip_mm']);
+        const idxPts = findCol(['points', 'hucre']);
+        const idxProd = findCol(['product', 'urun']);
+        const summaryPoints = [];
+        for (let i = headerIdx + 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = splitHsafCsvRow(line, sep);
+          const obsDate = normalizeHsafDate(cols[idxDateAnfis]);
+          const valRaw = String(cols[idxMeanMm] ?? '').trim().replace(',', '.');
+          const meanV = Number(valRaw);
+          if (!obsDate || !valRaw || !Number.isFinite(meanV) || meanV < 0) continue;
+          const bCode = idxBasinCode >= 0 ? String(cols[idxBasinCode] ?? '').trim() : 'TR_ALL';
+          const meta = HSAF_BASIN_META[bCode] || HSAF_BASIN_META.all;
+          const bName = idxBasinName >= 0 ? String(cols[idxBasinName] ?? '').trim() : meta.name;
+          const maxV = idxMaxMm >= 0 ? (Number(String(cols[idxMaxMm] ?? '').replace(',', '.')) || meanV) : meanV;
+          const pts = idxPts >= 0 ? (parseInt(cols[idxPts], 10) || 1) : 1;
+          summaryPoints.push({
+            date: obsDate,
+            lat: meta.center[0],
+            lon: meta.center[1],
+            val: meanV,
+            maxVal: maxV,
+            points: pts,
+            basinCode: bCode,
+            basinName: bName,
+            product: idxProd >= 0 ? String(cols[idxProd] ?? 'H64').trim() : 'H64'
+          });
+        }
+        if (!summaryPoints.length) return null;
+        return { kind: 'anfis_summary', schemaLabel: 'hsaf_basin_export ANFIS CSV', rows: summaryPoints };
+      }
+
+      // Şema 2: mserman90/data_access output.csv (x,time,lat,lon,Rainfall) veya template_h64 (time,latitude,longitude,acc_rr)
+      const idxTime = findCol(['time', 'date', 'tarih', 'obs_date']);
+      const idxLat = findCol(['lat', 'latitude', 'latg', 'enlem']);
+      const idxLon = findCol(['lon', 'longitude', 'long', 'lng', 'boylam']);
+      const idxVal = findCol(['rainfall', 'acc_rr', 'rr', 'precip', 'precip_mm', 'snow_swe', 'swe', 'sd', 'snow', 'snow_depth', 'value']);
+      if (idxTime === -1 || idxLat === -1 || idxLon === -1 || idxVal === -1) return null;
+
+      const valHeader = headers[idxVal];
+      const gridRows = [];
+      let skippedEmpty = 0;
+
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const cols = splitHsafCsvRow(line, sep);
+        const obsDate = normalizeHsafDate(cols[idxTime]);
+        if (!obsDate) continue;
+        const rawVal = String(cols[idxVal] ?? '').trim().replace(/^["']|["']$/g, '').replace(',', '.');
+        if (!rawVal || /^(nan|na|null|-9999)$/i.test(rawVal)) { skippedEmpty++; continue; }
+        const val = Number(rawVal);
+        const lat = Number(String(cols[idxLat] ?? '').trim().replace(',', '.'));
+        const lon = Number(String(cols[idxLon] ?? '').trim().replace(',', '.'));
+        if (!Number.isFinite(val) || val < 0 || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+          skippedEmpty++;
+          continue;
+        }
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+        gridRows.push({ date: obsDate, lat, lon, val });
+      }
+
+      if (!gridRows.length) return null;
+      const schemaLabel = valHeader === 'acc_rr'
+        ? 'template_h64 (acc_rr)'
+        : (valHeader.includes('snow') || valHeader === 'swe' || valHeader === 'sd'
+          ? `H26 Kar (${valHeader})`
+          : `data_access output.csv (${valHeader})`);
+      return { kind: 'grid', schemaLabel, unit: 'mm', skippedEmpty, rows: gridRows };
+    }
+
+    async function parseAndPlotHsafCsv() {
+      const txtEl = document.getElementById('hsafRawInput');
+      const rawText = (_hsafMemoryCsv && (!txtEl || txtEl.value.startsWith('/* Yüklendi:')))
+        ? _hsafMemoryCsv
+        : (txtEl?.value || '');
+      if (!rawText.trim()) {
+        setHsafStatus('Lütfen bir H-SAF CSV dosyası seçin, metin yapıştırın veya "🧪 H64 Şablon" butonuna tıklayın.', true);
+        return;
+      }
+
+      const parsed = parseHsafCsvRecords(rawText);
+      if (!parsed) {
+        setHsafStatus('H-SAF CSV sütunları tanınamadı. Beklenen: (x,time,lat,lon,Rainfall), (time,latitude,longitude,acc_rr) veya ANFIS CSV.', true);
+        return;
+      }
+
+      _hsafParsedRaw = parsed;
+      await applyHsafBasinFilterAndRender();
+    }
+
+    function reapplyHsafBasinFilter() {
+      if (_hsafParsedRaw) applyHsafBasinFilterAndRender();
+    }
+
+    async function applyHsafBasinFilterAndRender() {
+      const parsed = _hsafParsedRaw;
+      if (!parsed) return;
+      const basinKey = document.getElementById('hsafBasinFilterSelect')?.value || 'all';
+      const meta = HSAF_BASIN_META[basinKey] || HSAF_BASIN_META.all;
+
+      let polyFeature = null;
+      if (parsed.kind === 'grid' && basinKey !== 'all') {
+        const polyMap = await ensureHsafBasinPolygons();
+        polyFeature = polyMap?.[basinKey] || null;
+      }
+
+      const byDate = new Map();
+      let keptCount = 0;
+
+      if (parsed.kind === 'anfis_summary') {
+        for (const r of parsed.rows) {
+          byDate.set(r.date, {
+            date: r.date,
+            cells: [{ lat: r.lat, lon: r.lon, val: r.val, isCentroid: true }],
+            count: r.points,
+            mean: r.val,
+            max: r.maxVal,
+            maxCell: { lat: r.lat, lon: r.lon, val: r.maxVal },
+            basinName: r.basinName
+          });
+          keptCount++;
+        }
+      } else {
+        for (const r of parsed.rows) {
+          if (meta.bbox) {
+            const [minlon, minlat, maxlon, maxlat] = meta.bbox;
+            if (r.lon < minlon || r.lon > maxlon || r.lat < minlat || r.lat > maxlat) continue;
+            if (polyFeature && !hsafPointInFeature(r.lon, r.lat, polyFeature)) continue;
+          }
+          keptCount++;
+          let bucket = byDate.get(r.date);
+          if (!bucket) {
+            bucket = { date: r.date, cells: [], sum: 0, max: -1, maxCell: null };
+            byDate.set(r.date, bucket);
+          }
+          bucket.cells.push(r);
+          bucket.sum += r.val;
+          if (r.val > bucket.max) { bucket.max = r.val; bucket.maxCell = r; }
+        }
+        for (const b of byDate.values()) {
+          b.count = b.cells.length;
+          b.mean = b.sum / b.count;
+        }
+      }
+
+      if (byDate.size === 0) {
+        _hsafFilteredState = null;
+        setHsafStatus(`${meta.name} sınırı içinde geçerli H-SAF hücresi kalmadı (Toplam satır: ${parsed.rows.length}). "Tüm Alan" seçeneğini deneyin.`, true);
+        return;
+      }
+
+      const datesSorted = Array.from(byDate.keys()).sort();
+      _hsafFilteredState = {
+        basinKey,
+        basinName: byDate.get(datesSorted[0])?.basinName || meta.name,
+        schemaLabel: parsed.schemaLabel,
+        totalKept: keptCount,
+        dates: datesSorted,
+        byDate
+      };
+
+      const cardEl = document.getElementById('hsafResultCard');
+      if (cardEl) {
+        const opts = datesSorted.map((d, idx) => {
+          const b = byDate.get(d);
+          const selAttr = idx === datesSorted.length - 1 ? 'selected' : '';
+          return `<option value="${escapeHtmlDsi(d)}" ${selAttr}>${escapeHtmlDsi(d)} · P_ort=${b.mean.toFixed(2)} mm (${b.count} hücre)</option>`;
+        }).join('');
+
+        cardEl.style.display = 'block';
+        cardEl.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:4px; margin-bottom:5px;">
+            <strong style="color:#67E8F9; font-size:10px;">🛰️ ${escapeHtmlDsi(_hsafFilteredState.basinName)}</strong>
+            <span style="font-size:8.2px; color:#A5F3FC; background:#0E7490; padding:1px 5px; border-radius:4px;">${escapeHtmlDsi(parsed.schemaLabel)}</span>
+          </div>
+          <div style="margin-bottom:5px;">
+            <select id="hsafDateSelect" onchange="renderSelectedHsafDay()" style="width:100%; min-width:0; max-width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:3.5px 5px; border-radius:4px; font-size:9px;">
+              ${opts}
+            </select>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; background:#090D16; padding:5px; border-radius:5px; text-align:center; margin-bottom:5px;">
+            <div>
+              <div style="font-size:7.8px; color:#94A3B8;">GÜN / HÜCRE</div>
+              <div id="hsafKpiCells" style="font-weight:700; color:#E2E8F0;">--</div>
+            </div>
+            <div>
+              <div style="font-size:7.8px; color:#94A3B8;">ORT. YAĞIŞ P(t)</div>
+              <div id="hsafKpiMean" style="font-weight:700; color:#38BDF8;">-- mm</div>
+            </div>
+            <div>
+              <div style="font-size:7.8px; color:#94A3B8;">ANFIS P(t−2)</div>
+              <div id="hsafKpiLag2" style="font-weight:700; color:#FBBF24;">-- mm</div>
+            </div>
+          </div>
+          <div id="hsafMetaLine" style="font-size:8.8px; color:#94A3B8; margin-bottom:5px;"></div>
+          <div style="display:flex; gap:4px; margin-bottom:4px;">
+            <button type="button" id="btnToggleHsafGrid" onclick="toggleHsafGridLayer()" class="gis-btn" style="flex:1; justify-content:center; font-size:8.8px; padding:3.5px 5px; background:#164E63; border-color:#06B6D4; color:#ECFEFF; min-width:0;">
+              🗺️ Gridi Haritada Göster
+            </button>
+            <button type="button" onclick="pushHsafToAnfis()" class="gis-btn" style="flex:1; justify-content:center; font-size:8.8px; padding:3.5px 5px; background:#6D28D9; border-color:#A78BFA; color:#F5F3FF; min-width:0;">
+              🧠 ANFIS P(t−2) Aktar
+            </button>
+          </div>
+          <button type="button" onclick="exportHsafAnfisCsv()" class="gis-btn" style="width:100%; justify-content:center; font-size:8.6px; padding:3px 6px; background:#1E293B; border-color:#475569; color:#CBD5E1;">
+            ⬇️ Havza Günlük ANFIS CSV İndir
+          </button>
+        `;
+      }
+
+      setHsafStatus(`✅ ${datesSorted.length} gün, ${keptCount.toLocaleString('tr-TR')} geçerli H-SAF hücresi çözümlendi (${_hsafFilteredState.basinName}).`);
+      renderSelectedHsafDay(true);
+    }
+
+    function hsafColorForValue(val) {
+      if (val >= 30) return '#EF4444';
+      if (val >= 15) return '#F59E0B';
+      if (val >= 5) return '#10B981';
+      if (val > 0.1) return '#38BDF8';
+      return '#64748B';
+    }
+
+    function renderSelectedHsafDay(flyToGrid = false) {
+      const st = _hsafFilteredState;
+      if (!st) return;
+      const selEl = document.getElementById('hsafDateSelect');
+      const targetDate = selEl?.value || st.dates[st.dates.length - 1];
+      const bucket = st.byDate.get(targetDate);
+      if (!bucket) return;
+
+      const lag1Key = shiftIsoDate(targetDate, -1);
+      const lag2Key = shiftIsoDate(targetDate, -2);
+      const lag1Bucket = lag1Key ? st.byDate.get(lag1Key) : null;
+      const lag2Bucket = lag2Key ? st.byDate.get(lag2Key) : null;
+
+      const kCells = document.getElementById('hsafKpiCells');
+      const kMean = document.getElementById('hsafKpiMean');
+      const kLag2 = document.getElementById('hsafKpiLag2');
+      const metaLine = document.getElementById('hsafMetaLine');
+      if (kCells) kCells.textContent = `${st.dates.length}g / ${bucket.count}`;
+      if (kMean) kMean.textContent = `${bucket.mean.toFixed(2)} mm`;
+      if (kLag2) kLag2.textContent = lag2Bucket ? `${lag2Bucket.mean.toFixed(2)} mm` : '-- mm';
+
+      // Harita performansı: tek günde >250 nokta varsa en yüksek değerler + dengeli alt-örnekleme çiz
+      let drawCells = bucket.cells;
+      if (drawCells.length > 250) {
+        const sortedDesc = [...drawCells].sort((a, b) => b.val - a.val);
+        const topSlice = sortedDesc.slice(0, 125);
+        const topSet = new Set(topSlice);
+        const remaining = drawCells.filter(c => !topSet.has(c));
+        const stride = Math.max(1, Math.floor(remaining.length / 125));
+        const uniformSample = remaining.filter((_, idx) => idx % stride === 0).slice(0, 125);
+        drawCells = topSlice.concat(uniformSample);
+      }
+
+      _hsafGridLayer.clearLayers();
+      const latLngs = [];
+      for (const c of drawCells) {
+        const color = hsafColorForValue(c.val);
+        const radius = c.isCentroid ? 11 : Math.min(11, Math.max(4.5, 4 + Math.sqrt(Math.max(0, c.val)) * 1.1));
+        const m = L.circleMarker([c.lat, c.lon], {
+          radius,
+          color: '#FFFFFF',
+          weight: 1.2,
+          fillColor: color,
+          fillOpacity: 0.85
+        }).bindPopup(`
+          <div class="popup-title" style="color:${color};">🛰️ H-SAF ${escapeHtmlDsi(st.basinName)}</div>
+          <div style="font-size:10px; color:#CBD5E1; line-height:1.45;">
+            <div><strong>Tarih:</strong> ${escapeHtmlDsi(targetDate)}</div>
+            <div><strong>Değer:</strong> <strong style="color:${color};">${c.val.toFixed(2)} mm</strong>${c.isCentroid ? ' (Havza Ort.)' : ''}</div>
+            <div><strong>Konum:</strong> ${c.lat.toFixed(3)}°K, ${c.lon.toFixed(3)}°D</div>
+            <div><strong>Günlük Havza Ort. P(t):</strong> ${bucket.mean.toFixed(2)} mm · P(t−2): ${lag2Bucket ? lag2Bucket.mean.toFixed(2) + ' mm' : '--'}</div>
+            <button type="button" onclick="fetchWeatherByCoords(${c.lat}, ${c.lon}, 'H-SAF ${escapeHtmlDsi(st.basinName)}', true)" class="gis-btn" style="margin-top:5px; width:100%; justify-content:center; font-size:9px; padding:3px 6px; background:#0369A1; border-color:#38BDF8; color:#E0F2FE;">
+              🌦️ Bu Hücre İçin GloFAS &amp; Hava Aç
+            </button>
+          </div>
+        `);
+        m.addTo(_hsafGridLayer);
+        latLngs.push([c.lat, c.lon]);
+      }
+
+      if (metaLine) {
+        const maxInfo = bucket.maxCell
+          ? `Maks: <strong>${bucket.max.toFixed(2)} mm</strong> (${bucket.maxCell.lat.toFixed(2)}°K, ${bucket.maxCell.lon.toFixed(2)}°D)`
+          : '';
+        const lag1Txt = lag1Bucket ? ` · P(t−1)=${lag1Bucket.mean.toFixed(2)} mm` : '';
+        const subTxt = bucket.cells.length > drawCells.length ? ` · Haritada ${drawCells.length}/${bucket.cells.length} temsili nokta` : '';
+        metaLine.innerHTML = `${maxInfo}${lag1Txt}${subTxt}`;
+      }
+
+      if (!map.hasLayer(_hsafGridLayer)) map.addLayer(_hsafGridLayer);
+      updateHsafMapBtnState();
+
+      if (flyToGrid && latLngs.length) {
+        try {
+          if (latLngs.length === 1) {
+            map.flyTo(latLngs[0], 8, { duration: 1.0 });
+          } else {
+            map.flyToBounds(L.latLngBounds(latLngs).pad(0.25), { maxZoom: 9, duration: 1.0 });
+          }
+        } catch (_) {}
+      }
+    }
+
+    function pushHsafToAnfis() {
+      const st = _hsafFilteredState;
+      if (!st) return;
+      const selEl = document.getElementById('hsafDateSelect');
+      const targetDate = selEl?.value || st.dates[st.dates.length - 1];
+      const bucket = st.byDate.get(targetDate);
+      if (!bucket) return;
+
+      const lag2Key = shiftIsoDate(targetDate, -2);
+      const lag2Bucket = lag2Key ? st.byDate.get(lag2Key) : null;
+      const pForAnfis = lag2Bucket ? lag2Bucket.mean : bucket.mean;
+      const usedLag2 = Boolean(lag2Bucket);
+
+      _anfisLastLivePT2 = pForAnfis;
+      const locEl = document.getElementById('anfisSyncLocation');
+      const pt2El = document.getElementById('anfisLivePT2');
+      const p1El = document.getElementById('anfisInputP1');
+      const p2El = document.getElementById('anfisInputP2');
+      const hintEl = document.getElementById('anfisLagHint');
+
+      if (locEl) locEl.textContent = `H-SAF ${st.basinName} · ${targetDate}`;
+      if (pt2El) pt2El.textContent = usedLag2 ? `${pForAnfis.toFixed(2)} mm` : `${pForAnfis.toFixed(2)} mm (P(t))`;
+      if (p1El) p1El.value = pForAnfis.toFixed(2);
+      if (p2El) p2El.value = pForAnfis.toFixed(2);
+      calcThiessenAreal();
+
+      if (hintEl) {
+        hintEl.textContent = usedLag2
+          ? `H-SAF alansal yağış [${targetDate}]: P(t−2) [${lag2Key}] = ${pForAnfis.toFixed(2)} mm → ANFIS Thiessen girdilerine aktarıldı (P(t)=${bucket.mean.toFixed(2)} mm).`
+          : `H-SAF [${targetDate}]: ${lag2Key || 't−2'} günü CSV içinde bulunmadığından bugünkü havza ortalaması P(t)=${pForAnfis.toFixed(2)} mm aktarıldı.`;
+      }
+
+      setHsafStatus(
+        usedLag2
+          ? `🧠 H-SAF P(t−2) [${lag2Key}] = ${pForAnfis.toFixed(2)} mm ANFIS Thiessen modeline aktarıldı.`
+          : `ℹ️ ${lag2Key || 't−2'} günü CSV'de olmadığından P(t) = ${pForAnfis.toFixed(2)} mm aktarıldı.`
+      );
+    }
+
+    function exportHsafAnfisCsv() {
+      const st = _hsafFilteredState;
+      if (!st) return;
+      const lines = ['date,basin_code,basin_name,points,mean_precip_mm,max_precip_mm,p_lag1_mm,p_lag2_mm'];
+      const bCode = HSAF_BASIN_META[st.basinKey]?.code || st.basinKey;
+      for (const d of st.dates) {
+        const b = st.byDate.get(d);
+        const l1 = st.byDate.get(shiftIsoDate(d, -1) || '');
+        const l2 = st.byDate.get(shiftIsoDate(d, -2) || '');
+        lines.push([
+          d,
+          bCode,
+          `"${st.basinName.replace(/"/g, '""')}"`,
+          b.count,
+          b.mean.toFixed(3),
+          b.max.toFixed(3),
+          l1 ? l1.mean.toFixed(3) : '',
+          l2 ? l2.mean.toFixed(3) : ''
+        ].join(','));
+      }
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `hsaf_${bCode.toLowerCase()}_anfis.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
     }
 
     // -------------------------------------------------------------

@@ -77,6 +77,7 @@ Bu platform; gerçek zamanlı uydu meteorolojisini, küresel hidrolojik taşkın
 * `leaflet.js` & `leaflet.css`: Leaflet kütüphanesi yerel kopyası (CDN kesintilerine karşı çevrimdışı yedekli).
 * `open_meteo_flood_api.py`: Python standart kütüphaneleriyle yazılmış bağımsız CLI aracı. 7 günlük akarsu debisi çeker, terminalde ASCII çubuk hidroğrafı ve biçimlendirilmiş tablo basar.
 * `gpm_imerg_download.py`: NASA CMR API üzerinden Türkiye sınırları için GPM IMERG (Early, Late, Final) yağış granule'larını arayan ve kalibrasyon kurallarını uygulayan CLI aracı.
+* `scripts/hsaf_basin_export.py`: [mserman90/data_access](https://github.com/mserman90/data_access) (EUMETSAT H-SAF `H64`/`H60`/`H26`) uyumlu havza bazlı uydu yağış/kar indirici ve ANFIS `P(t−2)` CSV dışa aktarıcı Python CLI aracı (`turkiye_sinirasan_havzalar_web.geojson` poligon kesimi destekli).
 * `usbs_data_extractor.py`: USBS ArcGIS Server REST servislerinden havza ve taşkın modellerini sorgulayan ve GeoJSON dışa aktaran Python aracı.
 * `turkiye_sinirasan_havzalar_usbs.geojson`: Sınıraşan 5 havzamızın 10.97 MB optimize edilmiş yüksek çözünürlüklü vektör poligon sınırları.
 * `turkiye_sinirasan_havzalar_web.geojson`: Web harita için 2.19 MB ultra hızlı yüklenen sınıraşan havza vektör sınırları.
@@ -106,6 +107,21 @@ python gpm_imerg_download.py --mode early --limit 5
 # Birim dönüşümü ve dağlık arazi kalibrasyon kurallarını görüntüleme
 python gpm_imerg_download.py --info
 ```
+
+### EUMETSAT H-SAF (H64/H60/H26) Havza Yağışı & ANFIS P(t−2) Dışa Aktarma (`scripts/hsaf_basin_export.py`):
+```bash
+# Bağımlılıkları kurun (NetCDF4 okuma için)
+pip install -r scripts/requirements-hsaf.txt
+
+# FTP kimlik bilgisi olmadan örnek havza GeoJSON kesimi + ANFIS CSV testi
+python scripts/hsaf_basin_export.py --sample-test --basin meric --product h64
+
+# Gerçek H-SAF FTP üzerinden H64 günlük yağışı Fırat-Dicle havzasına keserek indir
+set HSAF_USER=kullanici
+set HSAF_PASS=parola
+python scripts/hsaf_basin_export.py --product h64 --basin firat-dicle --start 2026-11-01 --end 2026-11-10
+```
+Üretilen CSV dosyaları doğrudan haritadaki **Hava & Afet -> 🛰️ H-SAF Uydu Yağışı & Kar (data_access)** paneline yüklenerek grid hücreleri haritada çizdirilebilir ve `P(t−2)` ANFIS modeline aktarılabilir.
 
 ---
 
