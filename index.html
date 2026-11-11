@@ -1234,6 +1234,16 @@
               Copernicus GloFAS küresel hidrolojik modeli ve ECMWF verileriyle koordinat bazlı akarsu debisi (River Discharge) ve 7 günlük taşkın tahmini.
             </p>
 
+            <!-- Ölçülen / Modellenen Akarsu Kimlik Kartı -->
+            <div id="floodRiverCard" style="background:rgba(2, 132, 199, 0.16); border:1px solid #0284C7; border-radius:6px; padding:6px 8px; margin-bottom:6px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                <span style="font-size:8.5px; color:#7DD3FC; font-weight:700; letter-spacing:0.4px;">💧 ÖLÇÜLEN AKARSU / KESİT:</span>
+                <span id="floodGridResolutionBadge" style="font-size:8px; color:#E0F2FE; background:#0369A1; padding:1px 5px; border-radius:3px; white-space:nowrap;">GloFAS 0.05°</span>
+              </div>
+              <div id="floodRiverName" style="font-size:12.5px; font-weight:800; color:#F8FAFC; margin-top:2px; line-height:1.25;">Dicle Nehri (Tigris)</div>
+              <div id="floodRiverBasin" style="font-size:9.5px; color:#BAE6FD; margin-top:2px; line-height:1.3;">Fırat-Dicle Havzası • Yükleniyor...</div>
+            </div>
+
             <!-- Özet Metrik Kutucukları -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; font-size:10px;">
               <div style="background:#0F172A; border:1px solid #334155; border-radius:5px; padding:5px;">
@@ -4666,6 +4676,9 @@
                 <div style="font-size:9px; font-weight:bold; background:${riskBadgeBg}; color:#fff; padding:2px 5px; border-radius:3px; text-align:center;">
                   ${riskText}
                 </div>
+                <div id="popupFloodInfo" style="margin-top:5px; padding:4px 5px; background:rgba(2,132,199,0.2); border:1px solid #0284C7; border-radius:4px; font-size:9.5px; color:#E0F2FE; line-height:1.35;">
+                  🌊 Akarsu kesiti belirleniyor...
+                </div>
               </div>
             `)
             .openOn(map);
@@ -4675,14 +4688,259 @@
         fetchForecastData(lat, lon);
 
         // Open-Meteo Flood API: 7 Günlük Akarsu Debisi ve Taşkın Modeli
-        fetchFloodDischarge(lat, lon);
+        fetchFloodDischarge(lat, lon, displayName);
 
       } catch (err) {
         console.error('OpenWeather API Hatası:', err);
       }
     }
 
-    async function fetchFloodDischarge(lat, lon) {
+    let _floodRiverCatalogCache = null;
+
+    /**
+     * Haritada tanımlı akarsu polylineları ile Türkiye/bölge ana nehir ağını döndürür (tembel önbellekli).
+     */
+    function getFloodRiverCatalog() {
+      if (_floodRiverCatalogCache) return _floodRiverCatalogCache;
+      _floodRiverCatalogCache = [
+        // Fırat - Dicle Havzası
+        { name: 'Dicle Nehri (Tigris)', basin: 'Fırat-Dicle Havzası', keywords: ['dicle', 'tigris', 'cizre', 'bağdat', 'bagdat', 'hasankeyf', 'diyarbakır', 'musul'], coords: tigrisCoords },
+        { name: 'Büyük Zap Suyu (Dicle Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['zap', 'hakkari', 'çukurca'], coords: greatZabCoords },
+        { name: 'Hezil Çayı (Küçük Habur)', basin: 'Fırat-Dicle Havzası', keywords: ['hezil', 'habur', 'silopi', 'uludere'], coords: hezilCoords },
+        { name: 'Botan Çayı (Uluçay)', basin: 'Fırat-Dicle Havzası', keywords: ['botan', 'siirt'], coords: [[38.05, 43.10], [37.95, 42.45], [37.75, 41.85]] },
+        { name: 'Batman Çayı (Dicle Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['batman'], coords: [[38.25, 41.20], [38.05, 41.15], [37.78, 41.12]] },
+        { name: 'Garzan Çayı (Dicle Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['garzan', 'kurtalan'], coords: [[38.40, 41.65], [38.15, 41.55], [37.75, 41.50]] },
+        { name: 'Fırat Nehri (Euphrates)', basin: 'Fırat-Dicle Havzası', keywords: ['fırat', 'firat', 'euphrates', 'birecik', 'keban', 'karakaya'], coords: euphratesCoords },
+        { name: 'Karasu Nehri (Fırat Ana Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['karasu', 'erzurum', 'erzincan'], coords: [[39.98, 41.28], [39.92, 40.69], [39.78, 40.38], [39.75, 39.50], [39.60, 39.02], [38.80, 38.75]] },
+        { name: 'Murat Nehri (Fırat Ana Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['murat', 'ağrı', 'agri', 'muş', 'mus', 'palu', 'bingöl', 'elazığ'], coords: [[39.55, 43.67], [39.72, 43.05], [39.53, 42.77], [39.16, 42.51], [38.75, 41.50], [38.69, 39.93], [38.80, 38.75]] },
+        { name: 'Tohma Çayı (Fırat Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['tohma', 'darende', 'malatya'], coords: [[38.73, 37.24], [38.55, 37.50], [38.45, 38.25]] },
+        { name: 'Munzur Çayı (Fırat Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['munzur', 'tunceli'], coords: [[39.35, 39.22], [39.10, 39.55], [38.85, 39.20]] },
+        { name: 'Karakoyun / Cullap Deresi (Fırat Yan Kolu)', basin: 'Fırat-Dicle Havzası', keywords: ['şanlıurfa', 'sanliurfa', 'harran', 'karakoyun'], coords: [[37.25, 38.75], [37.16, 38.79], [36.95, 38.88], [36.70, 38.95]] },
+        { name: 'Küçük Zap Suyu (Dicle Kolu)', basin: 'Fırat-Dicle Havzası (Irak)', keywords: ['kerkük', 'süleymaniye'], coords: [[36.60, 45.10], [36.05, 44.60], [35.75, 44.15], [35.25, 43.45]] },
+        { name: 'Şattülarap (Shatt al-Arab)', basin: 'Fırat-Dicle Mansap Havzası', keywords: ['basra', 'şattülarap'], coords: [[31.00, 47.45], [30.50, 47.85], [29.95, 48.55]] },
+
+        // Aras - Kura & Kafkasya Havzaları
+        { name: 'Aras Nehri (Araz)', basin: 'Aras Havzası', keywords: ['aras', 'araz', 'ığdır', 'igdir', 'kağızman', 'tuzluca', 'nahçıvan'], coords: arasCoords },
+        { name: 'Kura Nehri (Kür / Mtkvari)', basin: 'Kura Havzası', keywords: ['kura', 'kür', 'mtkvari', 'ardahan', 'tiflis', 'mingəçevir'], coords: kuraCoords },
+        { name: 'Kars Çayı (Arpaçay - Aras Kolu)', basin: 'Aras Havzası', keywords: ['kars'], coords: karsCayiCoords },
+        { name: 'Arpaçay Sınır Nehri (Aras Kolu)', basin: 'Aras Havzası', keywords: ['arpaçay', 'arpacay', 'akyaka'], coords: arpacayCoords },
+        { name: 'Hrazdan Nehri (Aras Kolu)', basin: 'Aras Havzası (Ermenistan)', keywords: ['hrazdan', 'erivan', 'yerevan'], coords: [[40.55, 44.95], [40.18, 44.50], [39.98, 44.40]] },
+        { name: 'Arpa Nehri (Aras Kolu)', basin: 'Aras Havzası', keywords: ['arpa'], coords: [[39.80, 45.65], [39.68, 44.95]] },
+        { name: 'Ohçuçay / Voghji (Aras Kolu)', basin: 'Aras Havzası', keywords: ['ohçuçay', 'voghji', 'kapan'], coords: [[39.18, 46.10], [39.20, 46.40], [39.05, 46.68]] },
+        { name: 'Alazani / Qanıx Nehri (Kura Kolu)', basin: 'Kura Havzası', keywords: ['alazani', 'qanıx', 'şeki'], coords: [[42.05, 45.45], [41.55, 46.10], [41.15, 46.65], [40.85, 47.00]] },
+        { name: 'Sumqayıtçay / Abşeron Kıyı Drenajı', basin: 'Hazar Kıyı / Abşeron Havzası', keywords: ['bakü', 'baku', 'abşeron', 'sumqayıt', 'hazar'], coords: [[40.65, 49.05], [40.58, 49.62], [40.41, 49.87]] },
+
+        // Çoruh & Doğu Karadeniz Havzaları
+        { name: 'Çoruh Nehri', basin: 'Çoruh Havzası', keywords: ['çoruh', 'coruh', 'artvin', 'bayburt', 'yusufeli', 'batum'], coords: coruhCoords },
+        { name: 'Oltu Çayı (Çoruh Kolu)', basin: 'Çoruh Havzası', keywords: ['oltu', 'narman'], coords: oltuCoords },
+        { name: 'Berta Çayı (Çoruh Kolu)', basin: 'Çoruh Havzası', keywords: ['berta', 'şavşat'], coords: bertaCoords },
+        { name: 'Barhal / Altıparmak Çayı (Çoruh Kolu)', basin: 'Çoruh Havzası', keywords: ['barhal'], coords: barhalCoords },
+        { name: 'Rioni Nehri (Karadeniz)', basin: 'Karadeniz Havzası (Gürcistan)', keywords: ['kutaisi', 'poti'], coords: [[42.60, 43.40], [42.26, 42.70], [42.15, 41.68]] },
+        { name: 'Fırtına Deresi', basin: 'Doğu Karadeniz Havzası', keywords: ['fırtına', 'ardeşen'], coords: firtinaCoords },
+        { name: 'Harşit Çayı', basin: 'Doğu Karadeniz Havzası', keywords: ['harşit', 'gümüşhane', 'tirebolu'], coords: harsitCoords },
+        { name: 'Değirmendere', basin: 'Doğu Karadeniz Havzası', keywords: ['değirmendere', 'trabzon', 'maçka'], coords: degirmendereCoords },
+        { name: 'Karadere (Araklı)', basin: 'Doğu Karadeniz Havzası', keywords: ['karadere', 'araklı'], coords: karadereCoords },
+        { name: 'Taşlıdere (Askoroz Deresi)', basin: 'Doğu Karadeniz Havzası', keywords: ['taşlıdere', 'rize'], coords: taslidereCoords },
+        { name: 'İkizdere / İyidere', basin: 'Doğu Karadeniz Havzası', keywords: ['ikizdere', 'iyidere'], coords: ikizdereCoords },
+        { name: 'Aksu Deresi (Giresun)', basin: 'Doğu Karadeniz Havzası', keywords: ['aksu', 'giresun'], coords: aksuGiresunCoords },
+        { name: 'Batlama Deresi (Giresun)', basin: 'Doğu Karadeniz Havzası', keywords: ['batlama'], coords: batlamaCoords },
+        { name: 'Melet Irmağı', basin: 'Doğu Karadeniz Havzası', keywords: ['melet', 'ordu'], coords: meletCoords },
+
+        // Meriç, Asi, Seyhan, Ceyhan
+        { name: 'Meriç Nehri (Maritsa / Evros)', basin: 'Meriç-Ergene Havzası', keywords: ['meriç', 'meric', 'ipsala', 'enez', 'kapıkule'], coords: mericCoords },
+        { name: 'Tunca & Meriç Nehirleri (Edirne)', basin: 'Meriç-Ergene Havzası', keywords: ['tunca', 'edirne'], coords: [[42.50, 26.55], [42.15, 26.55], [41.80, 26.56], [41.67, 26.55]] },
+        { name: 'Ergene Nehri (Meriç Kolu)', basin: 'Meriç-Ergene Havzası', keywords: ['ergene', 'çorlu', 'lüleburgaz'], coords: [[41.25, 27.95], [41.38, 27.35], [41.32, 26.85], [41.05, 26.40]] },
+        { name: 'Asi Nehri (Orontes)', basin: 'Asi Havzası', keywords: ['asi', 'orontes', 'antakya', 'hatay'], coords: asiCoords },
+        { name: 'Küçük Asi / Amik Drenaj Kanalı', basin: 'Asi Havzası', keywords: ['küçük asi', 'amik'], coords: kucukAsiCoords },
+        { name: 'Afrin Çayı (Asi Kolu)', basin: 'Asi Havzası', keywords: ['afrin', 'reyhanlı'], coords: afrinCoords },
+        { name: 'Karasu Çayı (Amik - Asi Kolu)', basin: 'Asi Havzası', keywords: ['kırıkhan', 'islahiye'], coords: karasuAsiCoords },
+        { name: 'Ceyhan Nehri', basin: 'Ceyhan Havzası', keywords: ['ceyhan', 'elbistan', 'aslantaş'], coords: ceyhanCoords },
+        { name: 'Karaçay Deresi (Ceyhan Yan Kolu)', basin: 'Ceyhan Havzası', keywords: ['osmaniye', 'karaçay'], coords: [[37.02, 36.38], [37.07, 36.25], [37.13, 36.07]] },
+        { name: 'Aksu Çayı (Ceyhan Kolu)', basin: 'Ceyhan Havzası', keywords: ['maraş', 'kahramanmaraş'], coords: aksuCoords },
+        { name: 'Göksun Çayı (Ceyhan Kolu)', basin: 'Ceyhan Havzası', keywords: ['göksun'], coords: goksunCoords },
+        { name: 'Seyhan Nehri', basin: 'Seyhan Havzası', keywords: ['seyhan', 'adana'], coords: seyhanCoords },
+        { name: 'Göksu Irmağı (Seyhan Kolu)', basin: 'Seyhan Havzası', keywords: ['saimbeyli', 'feke'], coords: goksuSeyhanCoords },
+        { name: 'Çakıt & Körkün Suyu (Seyhan Kolu)', basin: 'Seyhan Havzası', keywords: ['çakıt', 'pozantı'], coords: cakitCoords },
+
+        // Türkiye Ulusal Ana Akarsu Ağı (Haritada Serbest Tıklamalar İçin)
+        { name: 'Kızılırmak Nehri', basin: 'Kızılırmak Havzası', keywords: ['kızılırmak', 'sivas', 'kayseri', 'nevşehir', 'kırıkkale', 'bafra'], coords: [[39.80, 37.90], [39.72, 36.95], [39.15, 35.30], [38.90, 34.00], [39.50, 33.45], [40.30, 33.90], [40.95, 34.80], [41.25, 35.45], [41.72, 35.95]] },
+        { name: 'Yeşilırmak Nehri', basin: 'Yeşilırmak Havzası', keywords: ['yeşilırmak', 'tokat', 'amasya', 'samsun', 'çarşamba'], coords: [[40.15, 37.45], [40.32, 36.55], [40.65, 35.85], [40.80, 36.20], [41.20, 36.70], [41.38, 36.65]] },
+        { name: 'Kelkit Çayı (Yeşilırmak Kolu)', basin: 'Yeşilırmak Havzası', keywords: ['kelkit', 'niksar', 'erbaa'], coords: [[40.12, 39.45], [40.25, 38.40], [40.58, 37.35], [40.77, 36.45]] },
+        { name: 'Sakarya Nehri', basin: 'Sakarya Havzası', keywords: ['sakarya', 'adapazarı', 'karasu', 'polatlı'], coords: [[39.35, 31.15], [39.65, 31.45], [40.08, 31.20], [40.05, 30.35], [40.50, 30.30], [40.80, 30.42], [41.12, 30.65]] },
+        { name: 'Ankara Çayı (Sakarya Kolu)', basin: 'Sakarya Havzası', keywords: ['ankara', 'sincan', 'çubuk'], coords: [[40.05, 33.15], [39.94, 32.86], [39.95, 32.55], [39.85, 32.10], [39.80, 31.70]] },
+        { name: 'Porsuk Çayı (Sakarya Kolu)', basin: 'Sakarya Havzası', keywords: ['porsuk', 'eskişehir', 'kütahya'], coords: [[39.42, 30.00], [39.78, 30.52], [39.65, 31.45]] },
+        { name: 'Filyos (Yenice) Irmağı', basin: 'Batı Karadeniz Havzası', keywords: ['filyos', 'karabük', 'zonguldak'], coords: [[40.90, 32.60], [41.20, 32.40], [41.35, 32.12], [41.58, 32.02]] },
+        { name: 'Bartın Çayı', basin: 'Batı Karadeniz Havzası', keywords: ['bartın'], coords: [[41.55, 32.45], [41.63, 32.33], [41.68, 32.22]] },
+        { name: 'Susurluk / Simav Çayı', basin: 'Susurluk Havzası', keywords: ['susurluk', 'balıkesir', 'bandırma'], coords: [[39.20, 28.95], [39.65, 28.15], [40.05, 28.35], [40.38, 28.40]] },
+        { name: 'Nilüfer Çayı (Susurluk Kolu)', basin: 'Susurluk Havzası', keywords: ['nilüfer', 'bursa'], coords: [[40.10, 29.15], [40.22, 28.95], [40.28, 28.45]] },
+        { name: 'Gediz Nehri', basin: 'Gediz Havzası', keywords: ['gediz', 'manisa', 'izmir', 'salihli'], coords: [[38.90, 29.40], [38.65, 28.40], [38.52, 27.60], [38.60, 26.85]] },
+        { name: 'Küçük Menderes Nehri', basin: 'Küçük Menderes Havzası', keywords: ['ödemiş', 'tire', 'selçuk'], coords: [[38.10, 28.25], [38.12, 27.70], [37.96, 27.27]] },
+        { name: 'Büyük Menderes Nehri', basin: 'Büyük Menderes Havzası', keywords: ['menderes', 'aydın', 'denizli', 'nazilli'], coords: [[38.10, 30.15], [38.05, 29.10], [37.85, 28.25], [37.75, 27.60], [37.53, 27.18]] },
+        { name: 'Dalaman Çayı', basin: 'Batı Akdeniz Havzası', keywords: ['dalaman', 'muğla', 'fethiye'], coords: [[37.35, 29.20], [37.05, 28.90], [36.70, 28.73]] },
+        { name: 'Aksu Çayı (Antalya)', basin: 'Antalya Havzası', keywords: ['antalya', 'isparta'], coords: [[37.65, 30.85], [37.25, 30.82], [36.85, 30.92]] },
+        { name: 'Manavgat Çayı', basin: 'Antalya Havzası', keywords: ['manavgat', 'side'], coords: [[37.25, 31.50], [36.90, 31.48], [36.74, 31.45]] },
+        { name: 'Göksu Nehri (Taşeli / Silifke)', basin: 'Doğu Akdeniz Havzası', keywords: ['silifke', 'mut', 'karaman'], coords: [[36.95, 32.50], [36.68, 33.30], [36.45, 33.70], [36.30, 34.05]] },
+        { name: 'Berdan (Tarsus) Çayı', basin: 'Doğu Akdeniz Havzası', keywords: ['tarsus', 'mersin'], coords: [[37.20, 34.70], [36.92, 34.90], [36.76, 34.90]] },
+        { name: 'Çarşamba Suyu', basin: 'Konya Kapalı Havzası', keywords: ['konya', 'çumra', 'bozkır'], coords: [[37.20, 32.10], [37.45, 32.55], [37.65, 32.80]] },
+        { name: 'Akarçay', basin: 'Akarçay Havzası', keywords: ['afyon', 'akarçay', 'bolvadin'], coords: [[38.85, 30.30], [38.75, 30.65], [38.65, 31.15]] },
+        { name: 'Bendimahi / Karasu Çayı', basin: 'Van Gölü Kapalı Havzası', keywords: ['van', 'muradiye', 'erciş'], coords: [[39.15, 43.95], [38.95, 43.70], [38.75, 43.35]] }
+      ];
+      return _floodRiverCatalogCache;
+    }
+
+    /**
+     * Bir noktanın polyline çizgisine (lat, lon) en yakın kilometre mesafesini hesaplar.
+     */
+    function pointToPolylineDistKm(lat, lon, coords) {
+      if (!coords || coords.length === 0) return Infinity;
+      const kmLat = 111.32;
+      const kmLon = 111.32 * Math.cos(lat * Math.PI / 180);
+      let minSq = Infinity;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const ax = (coords[i][1] - lon) * kmLon;
+        const ay = (coords[i][0] - lat) * kmLat;
+        const bx = (coords[i + 1][1] - lon) * kmLon;
+        const by = (coords[i + 1][0] - lat) * kmLat;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        const t = lenSq > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lenSq)) : 0;
+        const px = ax + t * dx;
+        const py = ay + t * dy;
+        const sq = px * px + py * py;
+        if (sq < minSq) minSq = sq;
+      }
+      if (coords.length === 1) {
+        const dx = (coords[0][1] - lon) * kmLon;
+        const dy = (coords[0][0] - lat) * kmLat;
+        minSq = dx * dx + dy * dy;
+      }
+      return Math.sqrt(minSq);
+    }
+
+    /**
+     * Verilen koordinat ve GloFAS hücresi için en olası akarsu adını ve havza bağlamını çözümler.
+     */
+    function resolveFloodRiverInfo(reqLat, reqLon, snapLat, snapLon, locationHint = '', q0 = null) {
+      const hintNorm = (locationHint || '').toLocaleLowerCase('tr-TR');
+      const catalog = getFloodRiverCatalog();
+      let bestEntry = null;
+      let bestScore = Infinity;
+      let bestDistKm = Infinity;
+
+      for (const entry of catalog) {
+        const dSnap = pointToPolylineDistKm(snapLat, snapLon, entry.coords);
+        const dReq = pointToPolylineDistKm(reqLat, reqLon, entry.coords);
+        const effDist = Math.min(dSnap, dReq * 0.9 + dSnap * 0.1);
+        let score = effDist;
+        if (effDist <= 15 && hintNorm && entry.keywords.some(kw => hintNorm.includes(kw))) {
+          score -= 3.5;
+        }
+        if (score < bestScore) {
+          bestScore = score;
+          bestEntry = entry;
+          bestDistKm = effDist;
+        }
+      }
+
+      if (bestEntry && bestDistKm <= 15) {
+        return { name: bestEntry.name, basin: bestEntry.basin, distKm: bestDistKm, matchType: 'corridor' };
+      }
+
+      if (bestEntry && bestDistKm <= 60) {
+        return {
+          name: `${bestEntry.name} Havza Drenajı (~${Math.round(bestDistKm)} km)`,
+          basin: bestEntry.basin,
+          distKm: bestDistKm,
+          matchType: 'basin'
+        };
+      }
+
+      const cityShort = locationHint ? locationHint.split('/')[0].trim() : '';
+      return {
+        name: cityShort ? `${cityShort} Çevresi Akarsu Ağı` : 'Küresel Akarsu / Drenaj Hücresi',
+        basin: 'GloFAS Küresel Hidrolojik Ağı',
+        distKm: bestDistKm,
+        matchType: 'global'
+      };
+    }
+
+    /**
+     * Open-Meteo Flood widgetindeki Akarsu/Kesit kimlik kartını ve varsa açık harita popup bilgisini günceller.
+     */
+    function updateFloodRiverBadge(reqLat, reqLon, snapLat, snapLon, locationHint = '', q0 = null, elevation = null, status = 'ready') {
+      const nameEl = document.getElementById('floodRiverName');
+      const basinEl = document.getElementById('floodRiverBasin');
+      const resBadge = document.getElementById('floodGridResolutionBadge');
+      if (!nameEl || !basinEl || !resBadge) return null;
+
+      const info = resolveFloodRiverInfo(reqLat, reqLon, snapLat, snapLon, locationHint, q0);
+      const cellStr = `GloFAS: ${snapLat.toFixed(2)}°K, ${snapLon.toFixed(2)}°D` + (elevation != null ? ` • ${Math.round(elevation)} m` : '');
+
+      if (status === 'loading') {
+        nameEl.textContent = info.name;
+        basinEl.textContent = `${info.basin} • Sorgulanıyor...`;
+        resBadge.textContent = 'Sorgulanıyor...';
+        resBadge.style.background = '#0369A1';
+        return info;
+      }
+
+      if (status === 'error') {
+        nameEl.textContent = info.name;
+        basinEl.textContent = `${info.basin} • Bağlantı hatası`;
+        resBadge.textContent = 'Bağlantı Hatası';
+        resBadge.style.background = '#991B1B';
+        return info;
+      }
+
+      const hasQ0 = typeof q0 === 'number' && Number.isFinite(q0);
+
+      if (status === 'nodata' || !hasQ0) {
+        nameEl.textContent = 'Modellenmiş Akarsu Hücresi Yok';
+        basinEl.textContent = `Seçilen 0.05° pikselde akış verisi bulunmuyor (${snapLat.toFixed(2)}°K, ${snapLon.toFixed(2)}°D)`;
+        resBadge.textContent = 'Veri Dışı Hücre';
+        resBadge.style.background = '#475569';
+      } else if (info.matchType === 'corridor') {
+        nameEl.textContent = info.name;
+        if (q0 >= 10) {
+          resBadge.textContent = 'Ana Yatak Kesiti';
+          resBadge.style.background = '#0284C7';
+          basinEl.textContent = `${info.basin} • ${cellStr}`;
+        } else if (q0 >= 1.0) {
+          resBadge.textContent = 'Akarsu / Kol Kesiti';
+          resBadge.style.background = '#0369A1';
+          basinEl.textContent = `${info.basin} • ${cellStr}`;
+        } else {
+          resBadge.textContent = '0.05° Yan Hücre';
+          resBadge.style.background = '#B45309';
+          basinEl.textContent = `${info.basin} • ${cellStr} • 0.05° piksel yan kol/kenar hücresi`;
+        }
+      } else {
+        nameEl.textContent = info.name;
+        resBadge.textContent = 'GloFAS 0.05° Hücre';
+        resBadge.style.background = '#0F766E';
+        basinEl.textContent = `${info.basin} • ${cellStr}`;
+      }
+
+      const popupEl = document.getElementById('popupFloodInfo');
+      if (popupEl) {
+        popupEl.textContent = '';
+        const titleLine = document.createElement('div');
+        titleLine.style.fontWeight = '700';
+        titleLine.textContent = `🌊 ${nameEl.textContent}`;
+        const subLine = document.createElement('div');
+        subLine.style.color = '#7DD3FC';
+        subLine.textContent = hasQ0
+          ? `Debi: ${q0.toFixed(2)} m³/s • ${info.basin}`
+          : `${info.basin} • Debi verisi yok`;
+        popupEl.appendChild(titleLine);
+        popupEl.appendChild(subLine);
+      }
+
+      return info;
+    }
+
+    async function fetchFloodDischarge(lat, lon, locationHint = '') {
       const currentEl = document.getElementById('floodCurrentDischarge');
       const peakEl = document.getElementById('floodPeakDischarge');
       const trendEl = document.getElementById('floodTrendBadge');
@@ -4691,13 +4949,29 @@
 
       if (!currentEl || !tbody) return;
 
+      updateFloodRiverBadge(lat, lon, lat, lon, locationHint, null, null, 'loading');
+
       try {
         const url = `https://flood-api.open-meteo.com/v1/flood?latitude=${lat}&longitude=${lon}&daily=river_discharge,river_discharge_median,river_discharge_max&forecast_days=7&timezone=auto`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Open-Meteo Flood verisi alınamadı');
-        const data = await res.json();
+        let data;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Open-Meteo Flood verisi alınamadı');
+          data = await res.json();
+        } catch (netErr) {
+          updateFloodRiverBadge(lat, lon, lat, lon, locationHint, null, null, 'error');
+          throw netErr;
+        }
 
-        if (!data.daily || !data.daily.river_discharge || data.daily.river_discharge.length === 0) {
+        const hasDaily = Boolean(data.daily && Array.isArray(data.daily.river_discharge) && data.daily.river_discharge.length > 0);
+        const snapLat = typeof data.latitude === 'number' ? data.latitude : lat;
+        const snapLon = typeof data.longitude === 'number' ? data.longitude : lon;
+        const firstValidQ = hasDaily ? data.daily.river_discharge.find(v => typeof v === 'number' && Number.isFinite(v)) : undefined;
+        const q0 = typeof firstValidQ === 'number' ? firstValidQ : null;
+
+        updateFloodRiverBadge(lat, lon, snapLat, snapLon, locationHint, q0, data.elevation ?? null, hasDaily && q0 !== null ? 'ready' : 'nodata');
+
+        if (!hasDaily) {
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:6px; color:#94A3B8;">Bu koordinatta modellenmiş akarsu debisi bulunamadı.</td></tr>`;
           currentEl.textContent = 'Veri Yok';
           peakEl.textContent = '--';
