@@ -691,6 +691,73 @@
       pointer-events: none;
     }
 
+    /* Harita Şehir / Taşkın / İstasyon Etiketleri (Zoom'a Göre Kompakt & Temiz) */
+    .map-flood-chip,
+    .map-station-chip {
+      position: relative;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: max-content;
+      display: inline-flex;
+      align-items: center;
+      font-size: 8px;
+      font-weight: 700;
+      line-height: 1.15;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .map-flood-chip {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.92);
+      border-radius: 3px;
+      padding: 1px 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.72);
+    }
+
+    .map-station-chip {
+      gap: 3px;
+      background: rgba(15,23,42,0.92);
+      color: #F8FAFC;
+      border: 1px solid var(--chip-color, #38BDF8);
+      border-radius: 9px;
+      padding: 1px 5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.75);
+    }
+
+    .map-station-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    #leafletMap.map-labels-compact .map-flood-chip,
+    #leafletMap.map-labels-compact .map-station-chip {
+      width: 10px;
+      height: 10px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1.5px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.85);
+    }
+
+    #leafletMap.map-labels-compact .map-station-chip {
+      background: var(--chip-color, #38BDF8);
+    }
+
+    #leafletMap.map-labels-compact .map-chip-text,
+    #leafletMap.map-labels-compact .map-station-dot {
+      display: none;
+    }
+
+    #leafletMap.map-labels-compact .map-flood-chip:hover,
+    #leafletMap.map-labels-compact .map-station-chip:hover {
+      transform: translate(-50%, -50%) scale(1.32);
+    }
+
     /* Leaflet Popup */
     .leaflet-popup-content-wrapper {
       background: rgba(15, 23, 42, 0.96) !important;
@@ -1047,6 +1114,14 @@
                 <input type="checkbox" id="layerPeaks">
                 <span class="layer-swatch" style="background: #64748B;"></span>
                 Dağ Zirveleri (Cilo, Ağrı vb.)
+              </label>
+            </div>
+
+            <div class="layer-item">
+              <label class="layer-label" title="Haritada şehir/taşkın ve istasyon etiketlerini her yakınlaştırmada sade nokta olarak tutar (üzerine gelince isim görünür)">
+                <input type="checkbox" id="layerForceCompactLabels">
+                <span class="layer-swatch" style="background: #EA580C; border-radius: 50%;"></span>
+                Mini Nokta Etiket Modu (Yazıları Gizle)
               </label>
             </div>
           </div>
@@ -3008,6 +3083,50 @@
       }
     }
 
+    function escapeChipHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    /** Zoom seviyesine uyumlu kompakt şehir/taşkın odak ikonu (uzak zoom'da 10px nokta, yakında mini etiket). */
+    function makeFloodChipIcon(label, color) {
+      const safe = escapeChipHtml(label);
+      return L.divIcon({
+        className: 'custom-div-icon',
+        floodLabel: label,
+        html: `<div class="map-flood-chip" style="background:${color}; --chip-color:${color};"><span class="map-chip-text">${safe}</span></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+    }
+
+    function attachFloodChipTooltips(groups) {
+      groups.forEach(grp => {
+        grp.eachLayer(layer => {
+          const lbl = layer?.options?.icon?.options?.floodLabel;
+          if (lbl && typeof layer.bindTooltip === 'function' && !layer.getTooltip()) {
+            layer.bindTooltip(`🌊 ${lbl}`, { direction: 'top', offset: [0, -7], opacity: 0.96 });
+          }
+        });
+      });
+    }
+
+    function syncMapLabelDensity() {
+      const el = document.getElementById('leafletMap');
+      if (!el) return;
+      const force = Boolean(document.getElementById('layerForceCompactLabels')?.checked);
+      const compact = force || map.getZoom() < 9;
+      el.classList.toggle('map-labels-compact', compact);
+    }
+
+    map.on('zoomend', syncMapLabelDensity);
+    document.getElementById('layerForceCompactLabels')?.addEventListener('change', syncMapLabelDensity);
+    syncMapLabelDensity();
+
     /* =============================================================
        A. DİCLE VE BÜYÜK ZAP NEHİR SİSTEMİ (TÜRKİYE -> IRAK)
        ============================================================= */
@@ -3088,11 +3207,7 @@
     L.polyline([[38.40, 41.65], [38.15, 41.55], [37.75, 41.50]], { color: '#6BAED6', weight: 2.8, dashArray: '4, 4' }).bindPopup('<div class="popup-title">💧 Garzan Çayı (Dicle Kolu)</div><div>Garzan Barajı ve taşkın yatağı.</div>').addTo(grpTigris);
 
     // DİCLE ALT HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI)
-    const makeDicleFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9.5px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeDicleFloodIcon = makeFloodChipIcon;
 
     // Taşkın Odak 1: Batman İl Merkezi (112 Puan - ÇOK YÜKSEK RİSK / Havza 1.si)
     L.marker([37.88, 41.13], { icon: makeDicleFloodIcon('Batman (112P - 1.)', '#DC2626') }).bindPopup(`
@@ -3181,11 +3296,7 @@
     }).bindPopup('<div class="popup-title">💧 Munzur Çayı (Fırat Kolu)</div><div>Munzur Gözeleri\'nden doğup Tunceli merkezden Keban Baraj Gölü\'ne kavuşur (3.308 km² alt havza).</div>').addTo(grpEuphrates);
 
     // FIRAT ALT HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI)
-    const makeFiratFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9.5px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeFiratFloodIcon = makeFloodChipIcon;
 
     // Taşkın Odak 1: Şanlıurfa Merkez (227 Puan - ÇOK YÜKSEK RİSK / Havza 1.si)
     L.marker([37.16, 38.79], { icon: makeFiratFloodIcon('Şanlıurfa (227P - 1.)', '#B91C1C') }).bindPopup(`
@@ -3460,11 +3571,7 @@
     `).addTo(grpArasKura);
 
     // ARAS HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER)
-    const makeArasFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9.5px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [80, 20]
-    });
+    const makeArasFloodIcon = makeFloodChipIcon;
 
     // Taşkın Odak 1: Kars İl Merkezi (102 Puan - ÇOK YÜKSEK RİSK)
     L.marker([40.61, 43.10], { icon: makeArasFloodIcon('Kars Taşkın (102P)', '#DC2626') }).bindPopup(`
@@ -3600,11 +3707,7 @@
     `).addTo(grpCoruh);
 
     // ÇORUH HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER - SYGM 26.12.2022)
-    const makeCoruhFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeCoruhFloodIcon = makeFloodChipIcon;
 
     // 1. Bayburt Merkez (46 Puan - ÇOK YÜKSEK RİSK 1.)
     L.marker([40.25, 40.22], { icon: makeCoruhFloodIcon('Bayburt Merkez (46P - 1.)', '#DC2626') }).bindPopup(`
@@ -3744,11 +3847,7 @@
     `).addTo(grpMericAsi);
 
     // ASİ HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER - SYGM 26.12.2022)
-    const makeAsiFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeAsiFloodIcon = makeFloodChipIcon;
 
     // 1. Reyhanlı Merkez (169 Puan - ÇOK YÜKSEK RİSK 1.)
     L.marker([36.27, 36.57], { icon: makeAsiFloodIcon('Reyhanlı (169P - 1.)', '#DC2626') }).bindPopup(`
@@ -3917,11 +4016,7 @@
     `).addTo(grpDoguKaradeniz);
 
     // DOĞU KARADENİZ HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER - SYGM 26.12.2022)
-    const makeDoguKaradenizFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeDoguKaradenizFloodIcon = makeFloodChipIcon;
 
     // 1. Rize İl Merkezi (172 Puan - ÇOK YÜKSEK RİSK 1. - HAVZA BİRİNCİSİ)
     L.marker([41.025, 40.518], { icon: makeDoguKaradenizFloodIcon('Rize Merkez (172P - 1.)', '#DC2626') }).bindPopup(`
@@ -4157,11 +4252,7 @@
     `).addTo(grpCeyhan);
 
     // 8. CEYHAN HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER)
-    const makeFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9.5px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [70, 20]
-    });
+    const makeFloodIcon = makeFloodChipIcon;
 
     // Taşkın Odak 1: Ceyhan İlçe Merkezi & Seddeleri (Çok Yüksek Risk - 67 Puan)
     L.marker([37.03, 35.82], { icon: makeFloodIcon('Ceyhan Sedde', '#DC2626') }).bindPopup(`
@@ -4277,11 +4368,7 @@
     `).addTo(grpSeyhan);
 
     // SEYHAN HAVZASI TAŞKIN YÖNETİM PLANI (TYP - risk ODAKLARI & TEDBİRLER - SYGM 26.12.2022)
-    const makeSeyhanFloodIcon = (label, color) => L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background:${color}; color:#fff; font-size:9px; font-weight:800; border:1.5px solid #fff; border-radius:4px; padding:2px 5px; box-shadow:0 0 8px ${color}; cursor:pointer; transform:translate(-50%, -50%); white-space:nowrap;">🌊 ${label}</div>`,
-      iconSize: [85, 20]
-    });
+    const makeSeyhanFloodIcon = makeFloodChipIcon;
 
     // 1. Adana İl Merkezi (338 Puan - ÇOK YÜKSEK RİSK 1.)
     L.marker([37.01, 35.35], { icon: makeSeyhanFloodIcon('Adana Merkez (338P - 1.)', '#DC2626') }).bindPopup(`
@@ -4412,6 +4499,11 @@
         <div class="popup-row"><span class="popup-lbl">Konum:</span><span class="popup-val">${pk.country}</span></div>
       `).addTo(grpPeaks);
     });
+
+    attachFloodChipTooltips([
+      grpTigris, grpEuphrates, grpArasKura, grpCoruh,
+      grpMericAsi, grpDoguKaradeniz, grpCeyhan, grpSeyhan
+    ]);
 
     /* -------------------------------------------------------------
        4. CANLI KOORDİNAT TAKİBİ VE HUD (60 FPS REQUESTANIMATIONFRAME THROTTLED)
@@ -6068,13 +6160,16 @@
         const flag = s.country === 'BG' ? '🇧🇬' : '🇹🇷';
         const ic = L.divIcon({
           className: 'custom-div-icon',
-          html: `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(15,23,42,0.92); color:#F8FAFC; border:1.5px solid ${color}; border-radius:12px; padding:1.5px 6px; font-size:9.5px; font-weight:700; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.75); transform:translate(-50%,-50%);"><span style="width:6px;height:6px;border-radius:50%;background:${color};"></span>${escapeHtmlDsi(s.name)}: ${qTxt}</div>`,
-          iconSize: [10, 10]
+          html: `<div class="map-station-chip" style="--chip-color:${color};"><span class="map-station-dot" style="background:${color};"></span><span class="map-chip-text">${escapeHtmlDsi(s.name)}: ${qTxt}</span></div>`,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
         });
 
         const safeId = escapeHtmlDsi(s.id);
         const codeTag = s.dsi_code ? ` · ${escapeHtmlDsi(s.dsi_code)}` : '';
-        const m = L.marker([s.lat, s.lon], { icon: ic }).bindPopup(`
+        const m = L.marker([s.lat, s.lon], { icon: ic })
+          .bindTooltip(`${escapeHtmlDsi(s.river)} — ${escapeHtmlDsi(s.name)}: ${qTxt} m³/s`, { direction: 'top', offset: [0, -7], opacity: 0.96 })
+          .bindPopup(`
           <div class="popup-title" style="color:${color};">${flag} ${escapeHtmlDsi(s.river)} — ${escapeHtmlDsi(s.name)}${codeTag}</div>
           <div style="font-size:10px; color:#CBD5E1; line-height:1.45; margin-bottom:6px;">
             <div><strong>Ölçüm Tarihi:</strong> ${escapeHtmlDsi(_edirneLiveData.display_date || _edirneLiveData.date)} · ${escapeHtmlDsi(s.time || '08:00')}</div>
