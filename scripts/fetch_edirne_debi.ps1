@@ -29,6 +29,8 @@ $MaxHistoryDays = 120
 
 if ($InstallSchedule) {
   $scriptPath = $PSCommandPath
+  $logDir = Join-Path $env:LOCALAPPDATA 'DSIEdirneDebi'
+  if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
   $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -Push"
   $slots = @(
     @{ Name = 'DSIEdirneDebi_0835'; Time = '08:35' },
@@ -36,10 +38,22 @@ if ($InstallSchedule) {
     @{ Name = 'DSIEdirneDebi_2035'; Time = '20:35' }
   )
   foreach ($s in $slots) {
-    schtasks /Create /TN $s.Name /TR $cmd /SC DAILY /ST $s.Time /F | Out-Null
+    schtasks /Create /TN $s.Name /TR $cmd /SC DAILY /ST $s.Time /F
+    if ($LASTEXITCODE -ne 0) { throw "Zamanlanmış görev oluşturulamadı: $($s.Name) (exit=$LASTEXITCODE)" }
     Write-Output "Zamanlanmış görev kuruldu: $($s.Name) ($($s.Time))"
   }
   exit 0
+}
+
+function Write-RunLog([string]$Message) {
+  try {
+    $logDir = Join-Path $env:LOCALAPPDATA 'DSIEdirneDebi'
+    if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+    $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    Add-Content -Path (Join-Path $logDir 'fetch.log') -Value "[$ts] $Message" -Encoding UTF8
+  } catch {
+    # log write failure should not block fetch
+  }
 }
 
 function ConvertTo-NormKey([string]$Text) {
@@ -187,9 +201,17 @@ foreach ($r in $rows) {
 }
 
 $historyByDate = @{}
+$prevSignature = ''
 if (Test-Path $OutFile) {
   try {
     $existing = Get-Content -Raw -Encoding UTF8 $OutFile | ConvertFrom-Json
+    $prevSigDict = @{}
+    foreach ($st in @($existing.stations)) {
+      if ($st.id) { $prevSigDict[$st.id] = $st.discharge_m3s }
+    }
+    $prevKeys = @($prevSigDict.Keys | Sort-Object) | ForEach-Object { "$($_)=$($prevSigDict[$_])" }
+    $prevSignature = "$($existing.date)|$($prevKeys -join ',')"
+
     if ($existing.history) {
       foreach ($h in $existing.history) {
         if ($h.date -and $h.stations) {
@@ -206,6 +228,10 @@ if (Test-Path $OutFile) {
     Write-Warning "Mevcut JSON arşivi okunamadı, temiz arşiv oluşturuluyor: $($_.Exception.Message)"
   }
 }
+
+$curKeys = @($stationDict.Keys | Sort-Object) | ForEach-Object { "$($_)=$($stationDict[$_])" }
+$curSignature = "$isoDate|$($curKeys -join ',')"
+$valuesChanged = ($curSignature -ne $prevSignature)
 
 $historyByDate[$isoDate] = [pscustomobject]@{
   date           = $isoDate
@@ -234,23 +260,36 @@ $payload = [pscustomobject]@{
   history        = $historyList.ToArray()
 }
 
-$outDir = Split-Path -Parent $OutFile
-if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
-$jsonText = ($payload | ConvertTo-Json -Depth 6) -replace "`r`n", "`n"
-[System.IO.File]::WriteAllText($OutFile, "$jsonText`n", [System.Text.UTF8Encoding]::new($false))
-Write-Output "OK: $OutFile güncellendi (date=$isoDate, stations=$($latestStations.Count), history=$($historyList.Count), kirishane=$($stationDict['meric_kirishane']))"
+if ($valuesChanged -or -not (Test-Path $OutFile)) {
+  $outDir = Split-Path -Parent $OutFile
+  if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
+  $jsonText = ($payload | ConvertTo-Json -Depth 6) -replace "`r`n", "`n"
+  [System.IO.File]::WriteAllText($OutFile, "$jsonText`n", [System.Text.UTF8Encoding]::new($false))
+  $msg = "OK: $OutFile güncellendi (date=$isoDate, stations=$($latestStations.Count), history=$($historyList.Count), kirishane=$($stationDict['meric_kirishane']))"
+  Write-Output $msg
+  Write-RunLog $msg
+} else {
+  $msg = "DEĞİŞİKLİK YOK: $isoDate verileri güncel (kirishane=$($stationDict['meric_kirishane']) m3/s)"
+  Write-Output $msg
+  Write-RunLog $msg
+}
 
 if ($Push) {
   Push-Location $RepoDir
   try {
     git diff --quiet -- data/edirne_debi.json
     if ($LASTEXITCODE -eq 0) {
-      Write-Output 'Değişiklik yok, git push atlandı.'
+      Write-Output 'Yeni debi değişikliği yok, git push atlandı.'
     } else {
+      git pull --rebase --autostash origin main
+      if ($LASTEXITCODE -ne 0) { throw "git pull --rebase başarısız (exit=$LASTEXITCODE)" }
       git add data/edirne_debi.json
       git commit -m "chore: update Edirne Meric-Tunca-Ergene river discharge ($isoDate) [skip ci]"
+      if ($LASTEXITCODE -ne 0) { throw "git commit başarısız (exit=$LASTEXITCODE)" }
       git push origin main
+      if ($LASTEXITCODE -ne 0) { throw "git push başarısız (exit=$LASTEXITCODE)" }
       Write-Output 'GitHub Pages deposuna push tamamlandı.'
+      Write-RunLog "GitHub Pages push tamamlandı ($isoDate)"
     }
   } finally {
     Pop-Location
