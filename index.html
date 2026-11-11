@@ -1459,6 +1459,43 @@
             </div>
           </div>
 
+          <!-- DSİ AGİ Yıllığı (DSI-taskin-parser) & Open-Meteo Flood / ANFIS Kıyaslama Modülü -->
+          <div class="panel-section" id="dsiParserSection" style="border-color: #10B981; background: rgba(16, 185, 129, 0.05);">
+            <div class="panel-section-title" style="color: #6EE7B7;">
+              <span>📖 DSİ AGİ Yıllığı & Flood / ANFIS Kıyas</span>
+              <a href="https://github.com/hckaraman/DSI-taskin-parser" target="_blank" rel="noopener" style="font-size: 8.5px; color:#D1FAE5; background:#047857; padding:1px 5px; border-radius:4px; text-decoration:none;">DSI-taskin-parser ↗</a>
+            </div>
+            <p style="font-size:10px; color:#CBD5E1; line-height:1.45; margin-bottom:6px;">
+              <strong>DSI-taskin-parser (Parser.py)</strong> CSV çıktısını veya DSİ Akım Gözlem Yıllığı tablo metnini tarayıcıda çözümleyip <strong>Open-Meteo Flood (GloFAS)</strong> ve <strong>Thiessen/ANFIS (t−2, t−1)</strong> modeliyle eşleştirir.
+            </p>
+
+            <input type="file" id="dsiAgiFileInput" accept=".csv,.txt" style="display:none;" onchange="handleDsiAgiFile(event)">
+            <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+              <button type="button" onclick="document.getElementById('dsiAgiFileInput').click()" class="gis-btn" style="flex:1.2; justify-content:center; font-size:9px; padding:4px 6px; background:#065F46; border-color:#10B981; color:#ECFDF5;">
+                📂 CSV / Metin Yükle
+              </button>
+              <button type="button" onclick="loadDsiAgiSample()" class="gis-btn" style="flex:1; justify-content:center; font-size:9px; padding:4px 6px; background:#1E293B; border-color:#475569; color:#E2E8F0;" title="Parser.py CSV formatında örnek D15A117 test verisi yükle">
+                🧪 Şablon Yükle
+              </button>
+              <div style="display:flex; align-items:center; gap:3px;">
+                <span style="font-size:8.5px; color:#94A3B8;">Su Yılı:</span>
+                <input type="number" id="dsiWaterYearInput" value="2014" min="1950" max="2035" style="width:52px; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:3px 4px; border-radius:4px; font-size:9.5px; text-align:center;">
+              </div>
+            </div>
+
+            <textarea id="dsiAgiRawInput" rows="3" placeholder="Parser.py CSV satırlarını (Date,Dischage,Name,Station,lon,lat,...) veya DSİ Yıllığı PDF tablo metnini buraya yapıştırın..." style="width:100%; background:#090D16; border:1px solid #334155; color:#E2E8F0; padding:5px 6px; border-radius:5px; font-size:9.5px; font-family:Consolas,monospace; resize:vertical; margin-bottom:5px;"></textarea>
+
+            <button type="button" onclick="parseAndLinkDsiAgi()" class="gis-btn active" style="width:100%; justify-content:center; font-size:9.5px; padding:5px 8px; background:#059669; border-color:#34D399; margin-bottom:6px;">
+              ⚙️ Çözümle, Open-Meteo Flood & ANFIS ile Kıyasla
+            </button>
+
+            <div id="dsiAgiStatusMsg" style="display:none; font-size:9.2px; padding:4px 6px; border-radius:4px; margin-bottom:6px;"></div>
+
+            <div id="dsiAgiResultCard" style="display:none; background:#0F172A; border:1px solid #334155; border-radius:6px; padding:7px; font-size:9.8px; line-height:1.45;">
+              <!-- Dinamik JS doldurur -->
+            </div>
+          </div>
+
           <!-- Radar Katmanları Hızlı Butonları -->
           <div class="panel-section" style="border-color: #334155;">
             <div class="panel-section-title">🛰️ Haritada Canlı Radar Aç/Kapat</div>
@@ -4418,6 +4455,7 @@
       allGroups.forEach(g => { if (g && map.hasLayer(g)) map.removeLayer(g); });
       if (usbsVectorBasinsLayer && map.hasLayer(usbsVectorBasinsLayer)) map.removeLayer(usbsVectorBasinsLayer);
       if (typeof _anfisStudyLayer !== 'undefined' && _anfisStudyLayer && map.hasLayer(_anfisStudyLayer)) map.removeLayer(_anfisStudyLayer);
+      if (typeof _dsiAgiParsedLayer !== 'undefined' && _dsiAgiParsedLayer && map.hasLayer(_dsiAgiParsedLayer)) map.removeLayer(_dsiAgiParsedLayer);
       
       document.querySelectorAll('#tabLayers input[type="checkbox"]').forEach(c => c.checked = false);
       document.querySelectorAll('#tabWeather input[type="checkbox"]').forEach(c => c.checked = false);
@@ -5439,6 +5477,476 @@
     }
 
     calcThiessenAreal();
+
+    /* -------------------------------------------------------------
+       DSİ AGİ YILLIĞI (DSI-taskin-parser) & FLOOD / ANFİS BAĞLANTISI
+       ------------------------------------------------------------- */
+    let _dsiAgiParsedData = null;
+    let _dsiAgiParsedLayer = null;
+    let _dsiCompareSeq = 0;
+
+    function escapeHtmlDsi(str) {
+      return String(str ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function setDsiAgiStatus(msg, isErr = false) {
+      const el = document.getElementById('dsiAgiStatusMsg');
+      if (!el) return;
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        return;
+      }
+      el.style.display = 'block';
+      el.textContent = msg;
+      el.style.background = isErr ? 'rgba(185, 28, 28, 0.25)' : 'rgba(6, 95, 70, 0.28)';
+      el.style.border = isErr ? '1px solid #EF4444' : '1px solid #10B981';
+      el.style.color = isErr ? '#FCA5A5' : '#A7F3D0';
+    }
+
+    function handleDsiAgiFile(event) {
+      const file = event?.target?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const txtEl = document.getElementById('dsiAgiRawInput');
+        if (txtEl) txtEl.value = String(e.target?.result || '');
+        parseAndLinkDsiAgi();
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function loadDsiAgiSample() {
+      const sampleCsv = [
+        'Date,Dischage,Name,Station,lon,lat,Basin_Area,Elevation',
+        '2014-04-01,8.40,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-02,9.15,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-03,10.80,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-04,13.60,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-05,15.20,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-06,14.10,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-07,12.50,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-08,11.20,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-09,10.60,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-10,11.90,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-11,14.30,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-12,13.40,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-13,11.80,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265',
+        '2014-04-14,10.90,SABLON_ORNEK_D15A117_AHMETHACI,D15A117,37.8258,39.9064,693.42,1265'
+      ].join('\n');
+      const txtEl = document.getElementById('dsiAgiRawInput');
+      if (txtEl) txtEl.value = sampleCsv;
+      parseAndLinkDsiAgi();
+    }
+
+    function parseDsiCsv(rawText) {
+      const lines = rawText.replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) return null;
+      const sep = lines[0].includes(';') ? ';' : (lines[0].includes('\t') ? '\t' : ',');
+      const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+
+      const findCol = (names) => headers.findIndex(h => names.includes(h));
+      const idxDate = findCol(['date', 'tarih']);
+      const idxQ = findCol(['dischage', 'discharge', 'debi', 'q', 'value']);
+      if (idxDate === -1 || idxQ === -1) return null;
+
+      const idxName = findCol(['name', 'istasyon_adi', 'ad']);
+      const idxStation = findCol(['station', 'istasyon', 'kod']);
+      const idxLon = findCol(['lon', 'lng', 'boylam']);
+      const idxLat = findCol(['lat', 'enlem']);
+      const idxArea = findCol(['basin_area', 'area', 'yagis_alani']);
+      const idxElev = findCol(['elevation', 'elev', 'rakim', 'kot']);
+
+      const numParse = (v) => {
+        if (v === undefined || v === null) return null;
+        const clean = String(v).trim().replace(',', '.');
+        if (!clean || /^kuru$/i.test(clean)) return /^kuru$/i.test(clean) ? 0 : null;
+        const n = Number(clean);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const series = [];
+      let meta = { station: '', name: '', lon: null, lat: null, basinArea: null, elevation: null, dryDays: 0, format: 'Parser.py CSV' };
+
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+        const dateRaw = cols[idxDate];
+        if (!dateRaw || !/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) continue;
+        const rawQ = cols[idxQ] ?? '';
+        if (/^kuru$/i.test(rawQ)) meta.dryDays++;
+        const qVal = numParse(rawQ);
+        if (qVal !== null) series.push({ date: dateRaw, q: qVal });
+
+        if (!meta.station && idxStation >= 0 && cols[idxStation]) meta.station = cols[idxStation];
+        if (!meta.name && idxName >= 0 && cols[idxName]) meta.name = cols[idxName];
+        if (meta.lon === null && idxLon >= 0) meta.lon = numParse(cols[idxLon]);
+        if (meta.lat === null && idxLat >= 0) meta.lat = numParse(cols[idxLat]);
+        if (meta.basinArea === null && idxArea >= 0) meta.basinArea = numParse(cols[idxArea]);
+        if (meta.elevation === null && idxElev >= 0) meta.elevation = numParse(cols[idxElev]);
+      }
+
+      if (series.length === 0) return null;
+      series.sort((a, b) => a.date.localeCompare(b.date));
+      if (!meta.station && meta.name) meta.station = meta.name.split('_')[0];
+      if (!meta.name && meta.station) meta.name = meta.station;
+      return { ...meta, series, isSample: /SABLON_ORNEK/i.test(meta.name) };
+    }
+
+    function parseRawDsiYearbook(rawText, waterYear) {
+      const lines = rawText.replace(/\r/g, '').split('\n');
+      const idxGun = lines.findIndex(l => /\b(G[üuÜU]n|GUN\/AY)\b/i.test(l));
+      const idxMaks = lines.findIndex(l => /\bMaks\b/i.test(l));
+      if (idxGun === -1 || idxMaks === -1 || idxMaks <= idxGun + 2) return null;
+
+      const idxYeri = lines.findIndex(l => /YER[İIĠ]/i.test(l));
+      const rawName = (idxYeri >= 2 ? lines[idxYeri - 2] : (lines.find(l => l.trim().length > 2) || 'DSİ_AGİ')).trim();
+      const nameSlug = rawName.replace(/\s+/g, '_');
+      const station = nameSlug.split('_')[0] || 'AGİ';
+
+      let lon = null, lat = null;
+      const idxDogu = lines.findIndex(l => /Do[ğg]u/i.test(l));
+      const coordLine = idxDogu >= 0 ? lines[idxDogu] : (idxYeri >= 0 ? lines[idxYeri + 1] : '');
+      const dec = (coordLine || '').match(/\d+/g)?.map(Number) || [];
+      if (dec.length >= 6) {
+        lon = Math.round((dec[0] + dec[1] / 60 + dec[2] / 3600) * 10000) / 10000;
+        lat = Math.round((dec[3] + dec[4] / 60 + dec[5] / 3600) * 10000) / 10000;
+        if (lon > 35 && lon < 43 && lat > 25 && lat < 46 && lat < lon) {
+          const tmp = lon; lon = lat; lat = tmp;
+        }
+      }
+
+      const idxArea = lines.findIndex(l => /YA[ĞG]I[ŞSġ]\s*ALANI/i.test(l));
+      let basinArea = null, elevation = null;
+      if (idxArea >= 0) {
+        const nums = lines[idxArea].replace(/,/g, '.').match(/\d+\.?\d*/g)?.map(Number) || [];
+        if (nums.length > 0) basinArea = nums[0];
+        if (nums.length > 1) elevation = nums[nums.length - 1];
+      }
+
+      const months = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const baseYear = waterYear - 1;
+      const isLeap = (waterYear % 4 === 0 && waterYear % 100 !== 0) || (waterYear % 400 === 0);
+      const monthDays = { 10: 31, 11: 30, 12: 31, 1: 31, 2: isLeap ? 29 : 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30 };
+
+      const grid = [];
+      let dryDays = 0;
+      const bodyLines = lines.slice(idxGun + 1, idxMaks);
+      for (const rowRaw of bodyLines) {
+        const trimmed = rowRaw.trim();
+        if (!trimmed) continue;
+        const tokens = trimmed.split(/\s+/);
+        const dayNum = parseInt(tokens[0], 10);
+        if (!Number.isInteger(dayNum) || dayNum < 1 || dayNum > 31) continue;
+        grid[dayNum - 1] = tokens.slice(1, 13);
+      }
+
+      const series = [];
+      for (let mIdx = 0; mIdx < months.length; mIdx++) {
+        const mm = months[mIdx];
+        const yy = mm >= 10 ? baseYear : waterYear;
+        const maxD = monthDays[mm];
+        for (let d = 1; d <= maxD; d++) {
+          const tok = grid[d - 1]?.[mIdx];
+          if (!tok || /^-{3,}$/.test(tok)) continue;
+          let val = null;
+          if (/^KURU$/i.test(tok)) {
+            val = 0;
+            dryDays++;
+          } else {
+            const parsed = Number(tok.replace(',', '.'));
+            if (Number.isFinite(parsed)) val = parsed;
+          }
+          if (val !== null) {
+            const dateIso = `${yy}-${String(mm).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            series.push({ date: dateIso, q: val });
+          }
+        }
+      }
+
+      if (series.length === 0) return null;
+      return { station, name: nameSlug, lon, lat, basinArea, elevation, dryDays, series, format: `DSİ Yıllığı (${waterYear} Su Yılı)`, isSample: false };
+    }
+
+    function computeHydroMetrics(pairs) {
+      const n = pairs.length;
+      if (n < 2) return null;
+      const obsMean = pairs.reduce((s, p) => s + p.obs, 0) / n;
+      const simMean = pairs.reduce((s, p) => s + p.sim, 0) / n;
+      let num = 0, denObs = 0, denSim = 0, sse = 0, sumObs = 0, sumSim = 0;
+      for (const p of pairs) {
+        const do_ = p.obs - obsMean;
+        const ds_ = p.sim - simMean;
+        const err = p.sim - p.obs;
+        num += do_ * ds_;
+        denObs += do_ * do_;
+        denSim += ds_ * ds_;
+        sse += err * err;
+        sumObs += p.obs;
+        sumSim += p.sim;
+      }
+      const r2 = (denObs > 0 && denSim > 0) ? Math.pow(num / Math.sqrt(denObs * denSim), 2) : null;
+      const rmse = Math.sqrt(sse / n);
+      const nse = denObs > 0 ? 1 - (sse / denObs) : null;
+      const biasPct = sumObs > 0 ? ((sumSim - sumObs) / sumObs) * 100 : null;
+      return { n, r2, rmse, nse, biasPct };
+    }
+
+    async function parseAndLinkDsiAgi() {
+      const raw = (document.getElementById('dsiAgiRawInput')?.value || '').trim();
+      const waterYear = parseInt(document.getElementById('dsiWaterYearInput')?.value, 10) || 2014;
+      if (!raw) {
+        setDsiAgiStatus('Lütfen Parser.py CSV verisi yükleyin, DSİ yıllık metni yapıştırın veya "Şablon Yükle"ye tıklayın.', true);
+        return;
+      }
+
+      let parsed = parseDsiCsv(raw);
+      if (!parsed) parsed = parseRawDsiYearbook(raw, waterYear);
+      if (!parsed) {
+        setDsiAgiStatus('Tablo ayrıştırılamadı. CSV (Date,Dischage,...) veya DSİ Yıllığı (Gün..Maks) formatını doğrulayın.', true);
+        return;
+      }
+
+      _dsiAgiParsedData = parsed;
+      setDsiAgiStatus(`${parsed.station}: ${parsed.series.length} günlük akım verisi ayrıştırıldı (${parsed.format}).`, false);
+      renderDsiParsedCard(parsed);
+
+      if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
+        focusParsedDsiOnMap(false);
+        await compareParsedAgiWithFloodAndAnfis(parsed);
+      }
+    }
+
+    function renderDsiParsedCard(p) {
+      const card = document.getElementById('dsiAgiResultCard');
+      if (!card) return;
+      card.style.display = 'block';
+
+      const vals = p.series.map(x => x.q);
+      const meanQ = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const peakItem = p.series.reduce((best, cur) => cur.q > best.q ? cur : best, p.series[0]);
+      const minQ = Math.min(...vals);
+      const coordsTxt = (p.lat !== null && p.lon !== null) ? `${p.lat.toFixed(4)}°K, ${p.lon.toFixed(4)}°D` : 'Koordinat yok';
+      const areaTxt = p.basinArea !== null ? `${p.basinArea.toLocaleString('tr-TR')} km²` : '-';
+      const elevTxt = p.elevation !== null ? `${p.elevation} m` : '-';
+      const sampleBadge = p.isSample ? '<span style="font-size:8px; background:#B45309; color:#FEF3C7; padding:1px 4px; border-radius:3px; margin-left:4px;">Test Şablonu</span>' : '';
+
+      const dayOptions = p.series.slice(-60).map(item =>
+        `<option value="${item.date}" ${item.date === peakItem.date ? 'selected' : ''}>${item.date} (Q=${item.q.toFixed(2)} m³/s${item.date === peakItem.date ? ' ⚡Tepe' : ''})</option>`
+      ).join('');
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px; margin-bottom:5px;">
+          <div>
+            <div style="font-size:11px; font-weight:700; color:#6EE7B7;">📍 ${escapeHtmlDsi(p.station)} · ${escapeHtmlDsi(p.name.replace(/_/g, ' '))}${sampleBadge}</div>
+            <div style="font-size:8.8px; color:#94A3B8;">${coordsTxt} · Yağış Alanı: ${areaTxt} · Rakım: ${elevTxt}</div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; text-align:center; background:#1E293B; border-radius:5px; padding:5px; margin-bottom:6px;">
+          <div>
+            <div style="font-size:8px; color:#94A3B8;">GÜN / KURU</div>
+            <div style="font-weight:700; color:#E2E8F0;">${p.series.length}g / ${p.dryDays}</div>
+          </div>
+          <div>
+            <div style="font-size:8px; color:#94A3B8;">ORTALAMA (Qort)</div>
+            <div style="font-weight:700; color:#38BDF8;">${meanQ.toFixed(2)} m³/s</div>
+          </div>
+          <div>
+            <div style="font-size:8px; color:#94A3B8;">TEPE (Qmaks)</div>
+            <div style="font-weight:700; color:#FBBF24;">${peakItem.q.toFixed(2)} m³/s</div>
+          </div>
+        </div>
+        <div style="font-size:8.8px; color:#94A3B8; margin-bottom:5px;">
+          Aralık: <strong>${p.series[0].date}</strong> → <strong>${p.series[p.series.length - 1].date}</strong> (Min: ${minQ.toFixed(2)}, Tepe: ${peakItem.date})
+        </div>
+        <div id="dsiComparisonStats" style="background:#090D16; border:1px solid #1E293B; border-radius:5px; padding:5px 6px; margin-bottom:6px; font-size:9.2px; color:#CBD5E1;">
+          ${p.lat !== null ? '⏳ Open-Meteo Flood (GloFAS) & ERA5 P(t−2) tarihsel karşılaştırması yükleniyor...' : '⚠️ Koordinat bulunamadığından GloFAS kıyaslaması atlandı.'}
+        </div>
+        <div style="display:flex; gap:4px; align-items:center; margin-bottom:5px;">
+          <select id="dsiAnfisDaySelect" style="flex:1; min-width:0; max-width:100%; background:#090D16; border:1px solid #334155; color:#F8FAFC; padding:3px 4px; border-radius:4px; font-size:8.8px; text-overflow:ellipsis;">
+            ${dayOptions}
+          </select>
+          <button type="button" onclick="pushDsiDayToAnfis()" class="gis-btn" style="flex-shrink:0; font-size:8.5px; padding:3px 6px; background:#6D28D9; border-color:#A78BFA; color:#EDE9FE; white-space:nowrap;">
+            🧠 ANFIS'e Aktar
+          </button>
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button type="button" onclick="focusParsedDsiOnMap(true)" class="gis-btn" style="flex:1; justify-content:center; font-size:8.8px; padding:3px 6px; background:#0369A1; border-color:#38BDF8; color:#E0F2FE;">
+            🎯 Harita & Canlı Debi
+          </button>
+          <button type="button" onclick="exportParsedDsiCsv()" class="gis-btn" style="flex:1; justify-content:center; font-size:8.8px; padding:3px 6px; background:#1E293B; border-color:#475569; color:#CBD5E1;">
+            ⬇️ CSV İndir (Parser.py)
+          </button>
+        </div>
+      `;
+    }
+
+    async function compareParsedAgiWithFloodAndAnfis(parsed) {
+      const seq = ++_dsiCompareSeq;
+      const statsEl = document.getElementById('dsiComparisonStats');
+      if (!statsEl || parsed.lat === null || parsed.lon === null) return;
+
+      const slice = parsed.series.length > 366 ? parsed.series.slice(-366) : parsed.series;
+      const startDate = slice[0].date;
+      const endDate = slice[slice.length - 1].date;
+      const pStart = shiftIsoDate(startDate, -2) || startDate;
+
+      try {
+        const [flRes, arRes] = await Promise.allSettled([
+          fetch(`https://flood-api.open-meteo.com/v1/flood?latitude=${parsed.lat}&longitude=${parsed.lon}&daily=river_discharge&start_date=${startDate}&end_date=${endDate}`),
+          fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${parsed.lat}&longitude=${parsed.lon}&daily=precipitation_sum&start_date=${pStart}&end_date=${endDate}&timezone=auto`)
+        ]);
+        if (seq !== _dsiCompareSeq) return;
+
+        const floodMap = new Map();
+        if (flRes.status === 'fulfilled' && flRes.value.ok) {
+          const fd = await flRes.value.json();
+          const ft = fd?.daily?.time || [];
+          const fq = fd?.daily?.river_discharge || [];
+          ft.forEach((d, i) => { if (typeof fq[i] === 'number') floodMap.set(d, fq[i]); });
+        }
+
+        const precipMap = new Map();
+        if (arRes.status === 'fulfilled' && arRes.value.ok) {
+          const ad = await arRes.value.json();
+          const at = ad?.daily?.time || [];
+          const ap = ad?.daily?.precipitation_sum || [];
+          at.forEach((d, i) => { if (typeof ap[i] === 'number') precipMap.set(d, ap[i]); });
+        }
+
+        parsed.floodMap = floodMap;
+        parsed.precipMap = precipMap;
+
+        const pairs = [];
+        const lag1Pairs = [];
+        for (let i = 0; i < slice.length; i++) {
+          const cur = slice[i];
+          const sim = floodMap.get(cur.date);
+          if (typeof sim === 'number') pairs.push({ date: cur.date, obs: cur.q, sim });
+          if (i > 0) lag1Pairs.push({ obs: cur.q, sim: slice[i - 1].q });
+        }
+
+        const metrics = computeHydroMetrics(pairs);
+        const lag1Metrics = computeHydroMetrics(lag1Pairs);
+
+        if (!metrics) {
+          statsEl.innerHTML = '⚠️ Seçilen tarih/koordinat aralığı için Open-Meteo GloFAS tarihsel verisi alınamadı.';
+          return;
+        }
+
+        const r2Txt = metrics.r2 !== null ? metrics.r2.toFixed(3) : '-';
+        const nseTxt = metrics.nse !== null ? metrics.nse.toFixed(2) : '-';
+        const biasTxt = metrics.biasPct !== null ? `${metrics.biasPct >= 0 ? '+' : ''}${metrics.biasPct.toFixed(1)}%` : '-';
+        const lagR2Txt = lag1Metrics?.r2 !== null ? lag1Metrics.r2.toFixed(3) : '-';
+
+        statsEl.innerHTML = `
+          <div style="color:#6EE7B7; font-weight:700; margin-bottom:2px;">⚖️ DSİ AGİ vs Open-Meteo GloFAS (${metrics.n} gün)</div>
+          <div>• <strong>Uyum Metrikleri:</strong> R² = <strong>${r2Txt}</strong> | RMSE = <strong>${metrics.rmse.toFixed(2)} m³/s</strong> | NSE = <strong>${nseTxt}</strong> | Bias = <strong>${biasTxt}</strong></div>
+          <div>• <strong>ANFIS Girdi Sinyali:</strong> DSİ Öz-gecikme <code>Q(t−1)→Q(t)</code> R² = <strong>${lagR2Txt}</strong> (${precipMap.size} gün ERA5 yağışı eşlendi)</div>
+        `;
+
+        pushDsiDayToAnfis();
+      } catch (_) {
+        if (seq === _dsiCompareSeq) {
+          statsEl.innerHTML = '⚠️ Open-Meteo tarihsel doğrulama bağlantısı kurulamadı; çevrimdışı DSİ istatistikleri geçerlidir.';
+        }
+      }
+    }
+
+    function pushDsiDayToAnfis(explicitDate = null) {
+      const p = _dsiAgiParsedData;
+      if (!p || !p.series || p.series.length === 0) return;
+      const selEl = document.getElementById('dsiAnfisDaySelect');
+      const targetDate = explicitDate || selEl?.value || p.series[p.series.length - 1].date;
+      const idx = p.series.findIndex(x => x.date === targetDate);
+      if (idx === -1) return;
+
+      const qT0 = p.series[idx].q;
+      const qT1 = idx > 0 ? p.series[idx - 1].q : null;
+      const tMinus2 = shiftIsoDate(targetDate, -2);
+      const pT2 = (tMinus2 && p.precipMap && p.precipMap.has(tMinus2)) ? p.precipMap.get(tMinus2) : null;
+      const qGlo = (p.floodMap && p.floodMap.has(targetDate)) ? p.floodMap.get(targetDate) : null;
+
+      const locEl = document.getElementById('anfisSyncLocation');
+      const pt2El = document.getElementById('anfisLivePT2');
+      const qt1El = document.getElementById('anfisLiveQT1');
+      const qt0El = document.getElementById('anfisLiveQT0');
+      const hintEl = document.getElementById('anfisLagHint');
+
+      if (locEl) locEl.textContent = `${p.station} · ${targetDate}`;
+      if (pt2El) pt2El.textContent = pT2 !== null ? `${pT2.toFixed(1)} mm` : '-- mm';
+      if (qt1El) qt1El.textContent = qT1 !== null ? `${qT1.toFixed(2)} m³/s` : '-- m³/s';
+      if (qt0El) qt0El.textContent = `${qT0.toFixed(2)} m³/s`;
+
+      if (pT2 !== null) {
+        _anfisLastLivePT2 = pT2;
+        const p1El = document.getElementById('anfisInputP1');
+        const p2El = document.getElementById('anfisInputP2');
+        if (p1El) p1El.value = pT2.toFixed(1);
+        if (p2El) p2El.value = pT2.toFixed(1);
+        calcThiessenAreal();
+      }
+
+      if (hintEl) {
+        const gloTxt = qGlo !== null ? ` · GloFAS Qsim(t)=${qGlo.toFixed(2)} m³/s` : '';
+        const q1Txt = qT1 !== null ? `DSİ Q(t−1)=${qT1.toFixed(2)} → ` : '';
+        const p2Txt = pT2 !== null ? `ERA5 P(t−2)=${pT2.toFixed(1)} mm · ` : '';
+        hintEl.textContent = `Aktarılan DSİ Yıllığı [${targetDate}]: ${p2Txt}${q1Txt}Qobs(t)=${qT0.toFixed(2)} m³/s${gloTxt}.`;
+      }
+    }
+
+    function focusParsedDsiOnMap(triggerLiveWeather = true) {
+      const p = _dsiAgiParsedData;
+      if (!p || p.lat === null || p.lon === null) return;
+      if (_dsiAgiParsedLayer && map.hasLayer(_dsiAgiParsedLayer)) map.removeLayer(_dsiAgiParsedLayer);
+      _dsiAgiParsedLayer = L.layerGroup();
+
+      const ic = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="background:#10B981; width:14px; height:14px; border:2px solid #fff; border-radius:3px; box-shadow:0 0 8px rgba(16,185,129,0.9); transform:translate(-50%,-50%);"></div>`,
+        iconSize: [14, 14]
+      });
+      const vals = p.series.map(x => x.q);
+      const meanQ = vals.reduce((a, b) => a + b, 0) / vals.length;
+      L.marker([p.lat, p.lon], { icon: ic }).bindPopup(`
+        <div class="popup-title" style="color:#6EE7B7;">📖 ${escapeHtmlDsi(p.station)} · ${escapeHtmlDsi(p.name.replace(/_/g, ' '))}</div>
+        <div style="font-size:10px; color:#CBD5E1; line-height:1.45;">
+          <div><strong>Format:</strong> ${escapeHtmlDsi(p.format)} (${p.series.length} gün)</div>
+          <div><strong>Yağış Alanı / Rakım:</strong> ${p.basinArea ?? '-'} km² / ${p.elevation ?? '-'} m</div>
+          <div><strong>DSİ Qort:</strong> ${meanQ.toFixed(2)} m³/s</div>
+        </div>
+      `).addTo(_dsiAgiParsedLayer);
+      _dsiAgiParsedLayer.addTo(map);
+      map.flyTo([p.lat, p.lon], 10, { duration: 1.2 });
+
+      if (triggerLiveWeather) {
+        fetchWeatherByCoords(p.lat, p.lon, `${p.station} (${p.name.replace(/_/g, ' ')})`, true);
+      }
+    }
+
+    function exportParsedDsiCsv() {
+      const p = _dsiAgiParsedData;
+      if (!p || !p.series.length) return;
+      const rows = ['Date,Dischage,Name,Station,lon,lat,Basin_Area,Elevation'];
+      for (const item of p.series) {
+        rows.push([
+          item.date,
+          item.q,
+          p.name,
+          p.station,
+          p.lon ?? '',
+          p.lat ?? '',
+          p.basinArea ?? '',
+          p.elevation ?? ''
+        ].join(','));
+      }
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${p.station}_${p.series[0].date.slice(0, 4)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
     async function fetchForecastData(lat, lon) {
       const container = document.getElementById('weatherForecastList');
