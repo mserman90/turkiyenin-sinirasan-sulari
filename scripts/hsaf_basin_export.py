@@ -144,7 +144,7 @@ def load_spatial_filter(
 
     polygons: List[Tuple[Tuple[float, float, float, float], List[List[List[float]]]]] = []
     if geojson_path and geojson_path.exists():
-        data = json.loads(geojson_path.read_text(encoding="utf-8"))
+        data = json.loads(geojson_path.read_text(encoding="utf-8-sig"))
         for feat in data.get("features", []):
             props = feat.get("properties") or {}
             kodu = str(props.get("KODU") or props.get("code") or "").strip()
