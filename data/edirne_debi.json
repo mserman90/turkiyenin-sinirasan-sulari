@@ -1,18 +1,28 @@
 {
     "source_url":  "https://edirnenehir.dsi.gov.tr/",
     "source_title":  "DSİ 11. Bölge Müdürlüğü — Nehir Debileri",
-    "date":  "2026-11-11",
-    "display_date":  "11.11.2026",
-    "fetched_at_utc":  "2026-11-11T12:22:33Z",
+    "date":  "2026-11-13",
+    "display_date":  "13.11.2026",
+    "fetched_at_utc":  "2026-11-13T11:35:05Z",
     "status":  "ok",
     "stations":  [
+                     {
+                         "id":  "arda_ivoylovgrad",
+                         "river":  "ARDA",
+                         "name":  "Ivoylovgrad",
+                         "country":  "TR",
+                         "time":  "08:00",
+                         "discharge_m3s":  0,
+                         "lat":  null,
+                         "lon":  null
+                     },
                      {
                          "id":  "tunca_elhova",
                          "river":  "TUNCA",
                          "name":  "Elhova",
                          "country":  "BG",
                          "time":  "08:00",
-                         "discharge_m3s":  7,
+                         "discharge_m3s":  6,
                          "lat":  42.1724,
                          "lon":  26.5676
                      },
@@ -32,7 +42,7 @@
                          "name":  "Harmanlı",
                          "country":  "BG",
                          "time":  "08:00",
-                         "discharge_m3s":  50,
+                         "discharge_m3s":  49,
                          "lat":  41.9303,
                          "lon":  25.9015
                      },
@@ -53,7 +63,7 @@
                          "country":  "TR",
                          "dsi_code":  "D01A003",
                          "time":  "08:00",
-                         "discharge_m3s":  189,
+                         "discharge_m3s":  103,
                          "lat":  41.6472,
                          "lon":  26.5722
                      },
@@ -63,7 +73,7 @@
                          "name":  "İpsala",
                          "country":  "TR",
                          "time":  "08:00",
-                         "discharge_m3s":  211,
+                         "discharge_m3s":  183,
                          "lat":  40.9217,
                          "lon":  26.384
                      },
@@ -73,7 +83,7 @@
                          "name":  "İnanlı",
                          "country":  "TR",
                          "time":  "08:00",
-                         "discharge_m3s":  2,
+                         "discharge_m3s":  1,
                          "lat":  41.2029,
                          "lon":  27.4727
                      },
@@ -86,6 +96,16 @@
                          "discharge_m3s":  3,
                          "lat":  41.4041,
                          "lon":  27.3555
+                     },
+                     {
+                         "id":  "ergene_yenicegorece",
+                         "river":  "ERGENE",
+                         "name":  "Yenicegörece",
+                         "country":  "TR",
+                         "time":  "08:00",
+                         "discharge_m3s":  7,
+                         "lat":  41.084,
+                         "lon":  26.535
                      }
                  ],
     "history":  [
@@ -102,6 +122,39 @@
                                          "meric_ipsala":  211,
                                          "ergene_inanli":  2,
                                          "ergene_luleburgaz":  3
+                                     }
+                    },
+                    {
+                        "date":  "2026-11-12",
+                        "display_date":  "12.11.2026",
+                        "fetched_at_utc":  "2026-11-12T11:35:05Z",
+                        "stations":  {
+                                         "tunca_elhova":  7,
+                                         "tunca_suakacagi":  7,
+                                         "meric_harmanli":  53,
+                                         "meric_svilengrad":  68,
+                                         "meric_kirishane":  112,
+                                         "meric_ipsala":  214,
+                                         "ergene_inanli":  1,
+                                         "ergene_luleburgaz":  3,
+                                         "ergene_yenicegorece":  7
+                                     }
+                    },
+                    {
+                        "date":  "2026-11-13",
+                        "display_date":  "13.11.2026",
+                        "fetched_at_utc":  "2026-11-13T11:35:05Z",
+                        "stations":  {
+                                         "arda_ivoylovgrad":  0,
+                                         "tunca_elhova":  6,
+                                         "tunca_suakacagi":  7,
+                                         "meric_harmanli":  49,
+                                         "meric_svilengrad":  65,
+                                         "meric_kirishane":  103,
+                                         "meric_ipsala":  183,
+                                         "ergene_inanli":  1,
+                                         "ergene_luleburgaz":  3,
+                                         "ergene_yenicegorece":  7
                                      }
                     }
                 ]
