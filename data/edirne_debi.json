@@ -1,9 +1,9 @@
 {
     "source_url":  "https://edirnenehir.dsi.gov.tr/",
     "source_title":  "DSİ 11. Bölge Müdürlüğü — Nehir Debileri",
-    "date":  "2026-11-18",
-    "display_date":  "18.11.2026",
-    "fetched_at_utc":  "2026-11-18T11:35:05Z",
+    "date":  "2026-11-19",
+    "display_date":  "19.11.2026",
+    "fetched_at_utc":  "2026-11-19T11:35:05Z",
     "status":  "ok",
     "stations":  [
                      {
@@ -12,7 +12,7 @@
                          "name":  "Ivoylovgrad",
                          "country":  "TR",
                          "time":  "08:00",
-                         "discharge_m3s":  179,
+                         "discharge_m3s":  0,
                          "lat":  null,
                          "lon":  null
                      },
@@ -42,7 +42,7 @@
                          "name":  "Harmanlı",
                          "country":  "BG",
                          "time":  "08:00",
-                         "discharge_m3s":  38,
+                         "discharge_m3s":  36,
                          "lat":  41.9303,
                          "lon":  25.9015
                      },
@@ -63,7 +63,7 @@
                          "country":  "TR",
                          "dsi_code":  "D01A003",
                          "time":  "08:00",
-                         "discharge_m3s":  152,
+                         "discharge_m3s":  158,
                          "lat":  41.6472,
                          "lon":  26.5722
                      },
@@ -73,7 +73,7 @@
                          "name":  "İpsala",
                          "country":  "TR",
                          "time":  "08:00",
-                         "discharge_m3s":  174,
+                         "discharge_m3s":  178,
                          "lat":  40.9217,
                          "lon":  26.384
                      },
@@ -103,7 +103,7 @@
                          "name":  "Yenicegörece",
                          "country":  "TR",
                          "time":  "08:00",
-                         "discharge_m3s":  7,
+                         "discharge_m3s":  6,
                          "lat":  41.084,
                          "lon":  26.535
                      }
@@ -206,6 +206,23 @@
                                          "ergene_inanli":  1,
                                          "ergene_luleburgaz":  3,
                                          "ergene_yenicegorece":  7
+                                     }
+                    },
+                    {
+                        "date":  "2026-11-19",
+                        "display_date":  "19.11.2026",
+                        "fetched_at_utc":  "2026-11-19T11:35:05Z",
+                        "stations":  {
+                                         "arda_ivoylovgrad":  0,
+                                         "tunca_elhova":  5,
+                                         "tunca_suakacagi":  6,
+                                         "meric_harmanli":  36,
+                                         "meric_svilengrad":  51,
+                                         "meric_kirishane":  158,
+                                         "meric_ipsala":  178,
+                                         "ergene_inanli":  1,
+                                         "ergene_luleburgaz":  3,
+                                         "ergene_yenicegorece":  6
                                      }
                     }
                 ]
